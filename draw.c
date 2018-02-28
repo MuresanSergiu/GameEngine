@@ -153,6 +153,12 @@ void initObjects() {
     objects[772].shape = shapes + GE_SQUARE;
     objects[772].rotation.x = 90;
 
+    objects[773].pos.x = 0;
+    objects[773].pos.y = 10;
+    objects[773].pos.z = 0;
+    objects[773].size.x = objects[773].size.y = objects[773].size.z = 1;
+    objects[773].texture = tex[1];
+    objects[773].shape = shapes + GE_VERTEX_WORLD_LESS_DUMB;
 }
 
 /* EXTERNAL FUNCTIONS */
@@ -383,7 +389,11 @@ void drawObject(geObject* obj) {
     } else {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
         GLenum shape = obj->shape->numVertices == 2 ? GL_LINES : GL_TRIANGLES;
-        glDrawElements(shape, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void *) obj->shape->offsetBytesIndex);
+        if (obj->shape == shapes + GE_VERTEX_WORLD_LESS_DUMB) {
+            glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
+        } else {
+            glDrawElements(shape, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
+        }
     }
     glBindVertexArray(0);
 }

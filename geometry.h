@@ -19,13 +19,15 @@ typedef enum {
     GE_TERRAIN_TRIG,
     GE_NORMALS,
     GE_TERRAIN_NOISE,
+    GE_VERTEX_WORLD_DUMB,
+    GE_VERTEX_WORLD_LESS_DUMB,
 
     // Number of shapes
     INDEX_NUM
 } SHAPES;
 
 void initShapes();
-geShape createCube(bool withTextureAndNormals);
+geShape createCube(bool inverted);
 geShape createSquare(bool withIndices);
 geShape createLine();
 geShape createCircle(int tess);
@@ -34,6 +36,8 @@ geShape createTetrahedron();
 geShape createTrigTerrain(int tess);
 geShape createLineNormals(geShape* shape);
 geShape createNoiseTerrain(int tess);
+geShape createVoxelWorldDumb(int size);
+geShape createVoxelWorldLessDumb(int size);
 
 geShape shapes[INDEX_NUM];
 

@@ -45,6 +45,8 @@ void initShapes() {
     shapes[GE_TERRAIN_TRIG] = createTrigTerrain(200);
     shapes[GE_NORMALS] = createLineNormals(shapes + GE_TERRAIN_TRIG);
     shapes[GE_TERRAIN_NOISE] = createNoiseTerrain(40);
+    shapes[GE_VERTEX_WORLD_DUMB] = createVoxelWorldDumb(8);
+    shapes[GE_VERTEX_WORLD_LESS_DUMB] = createVoxelWorldLessDumb(8);
 //    printf("%f %f %f %f\n", 1 / 3.0f, 1536 / 3.0f, (1 / 3.0f) * 1536, (2 * 1 / 3.0f) * 1536);
 }
 
@@ -541,3 +543,111 @@ geShape createNoiseTerrain(int tess) {
     return shape;
 }
 
+geShape createVoxelWorldDumb(int size) {
+    size_t arrayLength = (size_t) (size * size * size);
+
+    geShape shape;
+
+    shape.numVertices = 24 * arrayLength;
+    shape.numIndices = 36 * arrayLength;
+    shape.vertices = calloc(24 * arrayLength, sizeof(geVertex));
+    shape.indices = calloc(36 * arrayLength, sizeof(GLuint));
+
+    geShape blocks[arrayLength];
+
+    size_t i, j;
+    for (i = 0; i < arrayLength; i++) {
+        blocks[i] = createCube(false);
+        for (j = 0; j < blocks[i].numVertices; j++) {
+            geVertex* vertexBlock = blocks[i].vertices + j;
+            geVertex* vertexWorld = shape.vertices + (i * 24 + j);
+
+            size_t line = (i % (size * size)) / size;
+            size_t column = (i % (size * size)) % size;
+            size_t depth = i / (size * size);
+
+            vertexWorld->normal.x = vertexBlock->normal.x;
+            vertexWorld->normal.y = vertexBlock->normal.y;
+            vertexWorld->normal.z = vertexBlock->normal.z;
+
+            vertexWorld->pos.x = vertexBlock->pos.x + line;
+            vertexWorld->pos.y = vertexBlock->pos.y + column;
+            vertexWorld->pos.z = vertexBlock->pos.z + depth;
+
+            vertexWorld->texCoords.x = vertexBlock->texCoords.x;
+            vertexWorld->texCoords.y = vertexBlock->texCoords.y;
+            vertexWorld->texCoords.z = vertexBlock->texCoords.z;
+        }
+
+        for (j = 0; j < blocks[i].numIndices; j++) {
+            shape.indices[i * 36 + j] = (GLuint) (blocks[i].indices[j] + i * 24);
+        }
+
+        free(blocks[i].vertices);
+        free(blocks[i].indices);
+    }
+    return shape;
+}
+
+geShape createVoxelWorldLessDumb(int worldSize) {
+    size_t arrayLength = (size_t) (worldSize * worldSize * worldSize);
+
+    geShape shape;
+
+    int indicesPerCube = 14;
+
+    GLuint indices[] = {
+            0, 1, 3, 2,
+            6, 1, 7, 0,
+            4, 3, 5, 6,
+            4, 7
+    };
+
+    shape.numVertices = 8 * arrayLength;
+    shape.numIndices = indicesPerCube * arrayLength;
+    shape.vertices = calloc(shape.numVertices, sizeof(geVertex));
+    shape.indices = calloc(shape.numIndices, sizeof(GLuint));
+
+    geVertex vertices[] = {
+            // FRONT
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 1.0f,  0.0f }, {0.25f , 1 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 1.0f,  0.0f }, {0.5f, 1 / 3.0f }},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f,  0.0f }, {0.5f, 2 / 3.0f }},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f,  0.0f }, {0.25f, 2 / 3.0f }},
+            // BACK
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1 / 3.0f}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 2 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.75f, 2 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.75f, 1 / 3.0f}},
+    };
+
+
+    size_t i, j;
+    for (i = 0; i < arrayLength; i++) {
+        for (j = 0; j < 8; j++) {
+            geVertex* vertexBlock = vertices + j;
+            geVertex* vertexWorld = shape.vertices + (i * 8 + j);
+
+            size_t line = (i % (worldSize * worldSize)) / worldSize;
+            size_t column = (i % (worldSize * worldSize)) % worldSize;
+            size_t depth = i / (worldSize * worldSize);
+
+            vertexWorld->normal.x = vertexBlock->normal.x;
+            vertexWorld->normal.y = vertexBlock->normal.y;
+            vertexWorld->normal.z = vertexBlock->normal.z;
+
+            vertexWorld->pos.x = vertexBlock->pos.x + line;
+            vertexWorld->pos.y = vertexBlock->pos.y + column;
+            vertexWorld->pos.z = vertexBlock->pos.z + depth;
+
+            vertexWorld->texCoords.x = vertexBlock->texCoords.x;
+            vertexWorld->texCoords.y = vertexBlock->texCoords.y;
+            vertexWorld->texCoords.z = vertexBlock->texCoords.z;
+        }
+
+        for (j = 0; j < indicesPerCube; j++) {
+            shape.indices[i * indicesPerCube + j] = (GLuint) (indices[j] + i * 8);
+        }
+    }
+    return shape;
+}
