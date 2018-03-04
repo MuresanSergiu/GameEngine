@@ -19,7 +19,7 @@ SDL_Surface* getTexture(const char* path) {
 void loadTexture(GLuint* tOut, const char* path) {
     SDL_Surface * data = getTexture(path);
     if (!data) return;
-    printf("%i %i\n", data->h, data->w);
+    //printf("%i %i\n", data->h, data->w);
     GLenum format;
     if (data->format->BytesPerPixel == 3) {
         format = GL_RGB;
@@ -52,7 +52,7 @@ void loadTextureCubeMap(GLuint* tOut, const char* path) {
 
     SDL_Surface * data = getTexture(path);
     if (!data) return;
-    printf("%i %i\n", data->h, data->w);
+    //printf("%i %i\n", data->h, data->w);
     GLenum format, sizedFormat;
     if (data->format->BytesPerPixel == 3) {
         format = GL_RGB;

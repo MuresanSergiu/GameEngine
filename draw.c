@@ -139,8 +139,6 @@ void initObjects() {
         objects[i].pos.x = 0;
         objects[i].pos.y = 0; //(i - 722) / 50.0f;
         objects[i].pos.z = r * (cosA * cosA - r * sinA * cosA) / sinA;
-
-        printf("%f\n", objects[i].pos.z);
     }
 
     objects[772].pos.x = 0;
@@ -153,12 +151,13 @@ void initObjects() {
     objects[772].shape = shapes + GE_SQUARE;
     objects[772].rotation.x = 90;
 
-    objects[773].pos.x = 0;
-    objects[773].pos.y = 10;
-    objects[773].pos.z = 0;
+    objects[773].pos.x = -3;
+    objects[773].pos.y = 0;
+    objects[773].pos.z = -4;
     objects[773].size.x = objects[773].size.y = objects[773].size.z = 1;
-    objects[773].texture = tex[1];
-    objects[773].shape = shapes + GE_VERTEX_WORLD_LESS_DUMB;
+    objects[773].rotation.y = 60;
+    objects[773].texture = tex[0];
+    objects[773].shape = shapes + GE_VERTEX_WORLD_CULLED;
 }
 
 /* EXTERNAL FUNCTIONS */
@@ -331,7 +330,7 @@ void drawScene() {
         if (i >= 512 && i <= 712 || i == 721) { // Set ambient light
             glUniform4f(101, 1, 1, 1, 1);
         } else {
-            glUniform4f(101, 0.1f, 0.1f, 0.2f, 1);
+            glUniform4f(101, 0.3f, 0.3f, 0.3f, 1);
         }
 
         if (i >= 718 && i <= 720) { // If it's the GUI
@@ -389,11 +388,11 @@ void drawObject(geObject* obj) {
     } else {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
         GLenum shape = obj->shape->numVertices == 2 ? GL_LINES : GL_TRIANGLES;
-        if (obj->shape == shapes + GE_VERTEX_WORLD_LESS_DUMB) {
-            glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
-        } else {
+//        if (obj->shape == shapes + GE_VERTEX_WORLD_LESS_DUMB) {
+//            glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
+//        } else {
             glDrawElements(shape, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
-        }
+//        }
     }
     glBindVertexArray(0);
 }

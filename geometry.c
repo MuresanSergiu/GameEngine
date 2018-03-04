@@ -45,9 +45,12 @@ void initShapes() {
     shapes[GE_TERRAIN_TRIG] = createTrigTerrain(200);
     shapes[GE_NORMALS] = createLineNormals(shapes + GE_TERRAIN_TRIG);
     shapes[GE_TERRAIN_NOISE] = createNoiseTerrain(40);
-    shapes[GE_VERTEX_WORLD_DUMB] = createVoxelWorldDumb(8);
-    shapes[GE_VERTEX_WORLD_LESS_DUMB] = createVoxelWorldLessDumb(8);
-//    printf("%f %f %f %f\n", 1 / 3.0f, 1536 / 3.0f, (1 / 3.0f) * 1536, (2 * 1 / 3.0f) * 1536);
+    shapes[GE_VERTEX_WORLD_DUMB] = createVoxelWorldDumb(8, 3);
+    shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(8, 3);
+
+    // Comparison of worlds
+    printf("The dumb version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_DUMB].numVertices, shapes[GE_VERTEX_WORLD_DUMB].numIndices);
+    printf("The culled version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_CULLED].numVertices, shapes[GE_VERTEX_WORLD_CULLED].numIndices);
 }
 
 geShape createCube(bool inverted) {
@@ -543,111 +546,276 @@ geShape createNoiseTerrain(int tess) {
     return shape;
 }
 
-geShape createVoxelWorldDumb(int size) {
-    size_t arrayLength = (size_t) (size * size * size);
+geShape createVoxelWorldDumb(size_t surfaceSize, size_t height) {
+    geVertex vertices[] = {
+            // FRONT
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.25f , 1 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.5f, 1 / 3.0f }},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.5f, 2 / 3.0f }},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.25f, 2 / 3.0f }},
+            // BACK
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1 / 3.0f}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 2 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0.75f, 2 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0.75f, 1 / 3.0f}},
+            // LEFT
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {0.25f, 1 / 3.0f}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {0.25f, 2 / 3.0f}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 2 / 3.0f}},
+            // RIGHT
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.75f, 1 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.75f, 2 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.5f, 2 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.5f, 1 / 3.0f}},
+            // TOP
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.5f, 1}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.25f, 1}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.25f, 2 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.5f, 2 / 3.0f}},
+            // BOTTOM
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.25f, 1 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.25f, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.5f, 0}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.5f, 1 / 3.0f}},
+    };
+
+    GLuint indices[] = {
+            // FRONT
+            0, 1, 2,
+            2, 3, 0,
+            // BACK
+            4, 5, 6,
+            6, 7, 4,
+            // LEFT
+            8, 9, 10,
+            10, 11, 8,
+            // RIGHT
+            12, 13, 14,
+            14, 15, 12,
+            // TOP
+            16, 17, 18,
+            18, 19, 16,
+            // BOTTOM
+            20, 23, 22,
+            22, 21, 20
+    };
+
+    size_t i, j, k;
+    size_t heightMap[surfaceSize * surfaceSize];
+    size_t arrayLength = 0;
+
+    for (i = 0; i < surfaceSize; i++) {
+        for (j = 0; j < surfaceSize; j++) {
+            int noise = (int) floorf(sdnoise2(i, j, NULL, NULL) * 3.0f);
+            heightMap[i * surfaceSize + j] = (size_t) (height + noise);
+            arrayLength += (size_t) (height + noise);
+        }
+    }
+    printf("Array length for dumb is %llu\n", arrayLength);
 
     geShape shape;
 
-    shape.numVertices = 24 * arrayLength;
-    shape.numIndices = 36 * arrayLength;
-    shape.vertices = calloc(24 * arrayLength, sizeof(geVertex));
-    shape.indices = calloc(36 * arrayLength, sizeof(GLuint));
+    size_t numVertices = 24;
+    size_t numIndices = 36;
 
-    geShape blocks[arrayLength];
+    shape.numVertices = numVertices * arrayLength;
+    shape.numIndices = numIndices * arrayLength;
+    shape.vertices = calloc(numVertices * arrayLength, sizeof(geVertex));
+    shape.indices = calloc(numIndices * arrayLength, sizeof(GLuint));
 
-    size_t i, j;
-    for (i = 0; i < arrayLength; i++) {
-        blocks[i] = createCube(false);
-        for (j = 0; j < blocks[i].numVertices; j++) {
-            geVertex* vertexBlock = blocks[i].vertices + j;
-            geVertex* vertexWorld = shape.vertices + (i * 24 + j);
+    size_t currentBlockIndex = 0;
 
-            size_t line = (i % (size * size)) / size;
-            size_t column = (i % (size * size)) % size;
-            size_t depth = i / (size * size);
+    for (i = 0; i < surfaceSize * surfaceSize; i++) {
+        size_t line = i / surfaceSize;
+        size_t column = i % surfaceSize;
+        for (j = 0; j < heightMap[i]; j++) {
+            for (k = 0; k < numVertices; k++) {
+                geVertex* vertexBlock = vertices + k;
+                geVertex* vertexWorld = shape.vertices + (currentBlockIndex * numVertices + k);
 
-            vertexWorld->normal.x = vertexBlock->normal.x;
-            vertexWorld->normal.y = vertexBlock->normal.y;
-            vertexWorld->normal.z = vertexBlock->normal.z;
+                vertexWorld->normal.x = vertexBlock->normal.x;
+                vertexWorld->normal.y = vertexBlock->normal.y;
+                vertexWorld->normal.z = vertexBlock->normal.z;
 
-            vertexWorld->pos.x = vertexBlock->pos.x + line;
-            vertexWorld->pos.y = vertexBlock->pos.y + column;
-            vertexWorld->pos.z = vertexBlock->pos.z + depth;
+                vertexWorld->pos.x = vertexBlock->pos.x + line;
+                vertexWorld->pos.y = vertexBlock->pos.y + j;
+                vertexWorld->pos.z = vertexBlock->pos.z + column;
 
-            vertexWorld->texCoords.x = vertexBlock->texCoords.x;
-            vertexWorld->texCoords.y = vertexBlock->texCoords.y;
-            vertexWorld->texCoords.z = vertexBlock->texCoords.z;
+                vertexWorld->texCoords.x = vertexBlock->texCoords.x;
+                vertexWorld->texCoords.y = vertexBlock->texCoords.y;
+                vertexWorld->texCoords.z = vertexBlock->texCoords.z;
+            }
+            for (k = 0; k < numIndices; k++) {
+                shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
+            }
+            currentBlockIndex++;
         }
-
-        for (j = 0; j < blocks[i].numIndices; j++) {
-            shape.indices[i * 36 + j] = (GLuint) (blocks[i].indices[j] + i * 24);
-        }
-
-        free(blocks[i].vertices);
-        free(blocks[i].indices);
     }
     return shape;
 }
 
-geShape createVoxelWorldLessDumb(int worldSize) {
-    size_t arrayLength = (size_t) (worldSize * worldSize * worldSize);
+void removeFace(geShape* shape, uint64_t offsetVertex, uint64_t offsetIndex, uint32_t numFaces) {
+    size_t k;
+    memcpy(
+            shape->vertices + offsetVertex,
+            shape->vertices + (offsetVertex + 4 * numFaces),
+            sizeof(geVertex) * (shape->numVertices - (offsetVertex + 4 * numFaces))
+    );
+    memcpy(
+            shape->indices + offsetIndex,
+            shape->indices + (offsetIndex + 6 * numFaces),
+            sizeof(GLuint) * (shape->numIndices - (offsetIndex + 6 * numFaces))
+    );
+    for (k = offsetIndex + 6 * numFaces; k < shape->numIndices; k++) {
+        shape->indices[k] -= 4 * numFaces;
+    }
+    shape->numVertices -= 4 * numFaces;
+    shape->numIndices -= 6 * numFaces;
+}
+
+geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
+    // <editor-fold> INIT STAGE
+    geVertex vertices[] = {
+            // FRONT
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.25f , 1 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.5f, 1 / 3.0f }},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.5f, 2 / 3.0f }},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.25f, 2 / 3.0f }},
+            // BACK
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1 / 3.0f}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 2 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0.75f, 2 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0.75f, 1 / 3.0f}},
+            // LEFT
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {0.25f, 1 / 3.0f}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {0.25f, 2 / 3.0f}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 2 / 3.0f}},
+            // RIGHT
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.75f, 1 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.75f, 2 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.5f, 2 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.5f, 1 / 3.0f}},
+            // TOP
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.5f, 1}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.25f, 1}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.25f, 2 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.5f, 2 / 3.0f}},
+            // BOTTOM
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.25f, 1 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.25f, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.5f, 0}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.5f, 1 / 3.0f}},
+    };
+
+    GLuint indices[] = {
+            // FRONT
+            0, 1, 2,
+            2, 3, 0,
+            // BACK
+            4, 5, 6,
+            6, 7, 4,
+            // LEFT
+            8, 9, 10,
+            10, 11, 8,
+            // RIGHT
+            12, 13, 14,
+            14, 15, 12,
+            // TOP
+            16, 17, 18,
+            18, 19, 16,
+            // BOTTOM
+            20, 23, 22,
+            22, 21, 20
+    };
+
+    size_t i, j, k;
+    size_t heightMap[surfaceSize * surfaceSize];
+    size_t arrayLength = 0;
+
+    for (i = 0; i < surfaceSize; i++) {
+        for (j = 0; j < surfaceSize; j++) {
+            int noise = (int) floorf(sdnoise2(i, j, NULL, NULL) * 3.0f);
+            heightMap[i * surfaceSize + j] = (size_t) (height + noise);
+            arrayLength += (size_t) (height + noise);
+        }
+    }
+    printf("Array length for culled is %llu\n", arrayLength);
 
     geShape shape;
 
-    int indicesPerCube = 14;
+    size_t numVertices = 24;
+    size_t numIndices = 36;
 
-    GLuint indices[] = {
-            0, 1, 3, 2,
-            6, 1, 7, 0,
-            4, 3, 5, 6,
-            4, 7
-    };
+    shape.numVertices = numVertices * arrayLength;
+    shape.numIndices = numIndices * arrayLength;
+    shape.vertices = calloc(numVertices * arrayLength, sizeof(geVertex));
+    shape.indices = calloc(numIndices * arrayLength, sizeof(GLuint));
 
-    shape.numVertices = 8 * arrayLength;
-    shape.numIndices = indicesPerCube * arrayLength;
-    shape.vertices = calloc(shape.numVertices, sizeof(geVertex));
-    shape.indices = calloc(shape.numIndices, sizeof(GLuint));
+    size_t currentBlockIndex = 0;
 
-    geVertex vertices[] = {
-            // FRONT
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 1.0f,  0.0f }, {0.25f , 1 / 3.0f}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 1.0f,  0.0f }, {0.5f, 1 / 3.0f }},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f,  0.0f }, {0.5f, 2 / 3.0f }},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f,  0.0f }, {0.25f, 2 / 3.0f }},
-            // BACK
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1 / 3.0f}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 2 / 3.0f}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.75f, 2 / 3.0f}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.75f, 1 / 3.0f}},
-    };
+    for (i = 0; i < surfaceSize * surfaceSize; i++) {
+        size_t line = i / surfaceSize;
+        size_t column = i % surfaceSize;
+        for (j = 0; j < heightMap[i]; j++) {
+            for (k = 0; k < numVertices; k++) {
+                geVertex* vertexBlock = vertices + k;
+                geVertex* vertexWorld = shape.vertices + (currentBlockIndex * numVertices + k);
 
+                vertexWorld->normal.x = vertexBlock->normal.x;
+                vertexWorld->normal.y = vertexBlock->normal.y;
+                vertexWorld->normal.z = vertexBlock->normal.z;
 
-    size_t i, j;
-    for (i = 0; i < arrayLength; i++) {
-        for (j = 0; j < 8; j++) {
-            geVertex* vertexBlock = vertices + j;
-            geVertex* vertexWorld = shape.vertices + (i * 8 + j);
+                vertexWorld->pos.x = vertexBlock->pos.x + line;
+                vertexWorld->pos.y = vertexBlock->pos.y + j;
+                vertexWorld->pos.z = vertexBlock->pos.z + column;
 
-            size_t line = (i % (worldSize * worldSize)) / worldSize;
-            size_t column = (i % (worldSize * worldSize)) % worldSize;
-            size_t depth = i / (worldSize * worldSize);
-
-            vertexWorld->normal.x = vertexBlock->normal.x;
-            vertexWorld->normal.y = vertexBlock->normal.y;
-            vertexWorld->normal.z = vertexBlock->normal.z;
-
-            vertexWorld->pos.x = vertexBlock->pos.x + line;
-            vertexWorld->pos.y = vertexBlock->pos.y + column;
-            vertexWorld->pos.z = vertexBlock->pos.z + depth;
-
-            vertexWorld->texCoords.x = vertexBlock->texCoords.x;
-            vertexWorld->texCoords.y = vertexBlock->texCoords.y;
-            vertexWorld->texCoords.z = vertexBlock->texCoords.z;
-        }
-
-        for (j = 0; j < indicesPerCube; j++) {
-            shape.indices[i * indicesPerCube + j] = (GLuint) (indices[j] + i * 8);
+                vertexWorld->texCoords.x = vertexBlock->texCoords.x;
+                vertexWorld->texCoords.y = vertexBlock->texCoords.y;
+                vertexWorld->texCoords.z = vertexBlock->texCoords.z;
+            }
+            for (k = 0; k < numIndices; k++) {
+                shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
+            }
+            currentBlockIndex++;
         }
     }
+
+    // </editor-fold>
+//    return shape;
+    currentBlockIndex = 0;
+    size_t indicesJump = 0;
+    size_t verticesJump = 0;
+    for (i = 0; i < surfaceSize * surfaceSize; i++) {
+        if (heightMap[i] == 1) {
+            currentBlockIndex++;
+            continue;
+        }
+        for (j = 0; j < heightMap[i]; j++) {
+            if (j == 0) {
+                removeFace(&shape, currentBlockIndex * numVertices - verticesJump + 16, currentBlockIndex * numIndices - indicesJump + 24, 1);
+                verticesJump += 4;
+                indicesJump += 6;
+            } else if (j == heightMap[i] - 1) {
+                removeFace(&shape, currentBlockIndex * numVertices - verticesJump + 20, currentBlockIndex * numIndices - indicesJump + 30, 1);
+                verticesJump += 4;
+                indicesJump += 6;
+            } else {
+                removeFace(&shape, currentBlockIndex * numVertices - verticesJump + 16, currentBlockIndex * numIndices - indicesJump + 24, 2);
+                verticesJump += 8;
+                indicesJump += 12;
+            }
+            currentBlockIndex++;
+//            break;
+        }
+        // Jump over top block
+//        currentBlockIndex++;
+//        break;
+    }
+
+    realloc(shape.vertices, shape.numVertices * sizeof(geVertex));
+    realloc(shape.indices, shape.numIndices * sizeof(GLuint));
+
     return shape;
 }

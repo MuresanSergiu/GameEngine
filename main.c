@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <studio.h>
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <stdbool.h>
