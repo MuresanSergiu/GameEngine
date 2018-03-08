@@ -667,13 +667,14 @@ void removeFace(geShape* shape, uint64_t offsetVertex, uint64_t offsetIndex, uin
             shape->indices + (offsetIndex + 6 * numFaces),
             sizeof(GLuint) * (shape->numIndices - (offsetIndex + 6 * numFaces))
     );
-    for (k = offsetIndex + 6 * numFaces; k < shape->numIndices; k++) {
-        shape->indices[k] -= 4 * numFaces;
+    for (k = offsetIndex; k < shape->numIndices; k++) {
+        shape->indices[k] -= (4 * numFaces);
     }
-    shape->numVertices -= 4 * numFaces;
-    shape->numIndices -= 6 * numFaces;
+    shape->numVertices -= (4 * numFaces);
+    shape->numIndices -= (6 * numFaces);
 }
 
+#define MAX_HEIGHT 128
 geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     // <editor-fold> INIT STAGE
     geVertex vertices[] = {
@@ -730,14 +731,17 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
             22, 21, 20
     };
 
-    size_t i, j, k;
-    size_t heightMap[surfaceSize * surfaceSize];
+    size_t oX, oY, oZ, k;
     size_t arrayLength = 0;
+    int map[surfaceSize][surfaceSize][MAX_HEIGHT];
+    memset(map, 0, sizeof(int) * surfaceSize * surfaceSize * MAX_HEIGHT);
 
-    for (i = 0; i < surfaceSize; i++) {
-        for (j = 0; j < surfaceSize; j++) {
-            int noise = (int) floorf(sdnoise2(i, j, NULL, NULL) * 3.0f);
-            heightMap[i * surfaceSize + j] = (size_t) (height + noise);
+    for (oX = 0; oX < surfaceSize; oX++) {
+        for (oZ = 0; oZ < surfaceSize; oZ++) {
+            int noise = (int) floorf(sdnoise2(oX, oZ, NULL, NULL) * 3.0f);
+            for (oY = 0; oY < height + noise; oY++) {
+                map[oX][oZ][oY] = 1;
+            }
             arrayLength += (size_t) (height + noise);
         }
     }
@@ -755,30 +759,33 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
 
     size_t currentBlockIndex = 0;
 
-    for (i = 0; i < surfaceSize * surfaceSize; i++) {
-        size_t line = i / surfaceSize;
-        size_t column = i % surfaceSize;
-        for (j = 0; j < heightMap[i]; j++) {
-            for (k = 0; k < numVertices; k++) {
-                geVertex* vertexBlock = vertices + k;
-                geVertex* vertexWorld = shape.vertices + (currentBlockIndex * numVertices + k);
+    for (oX = 0; oX < surfaceSize; oX++) {
+        for (oZ = 0; oZ < surfaceSize; oZ++) {
+            for (oY = 0; oY < MAX_HEIGHT; oY++) {
+                if (map[oX][oZ][oY] == 0) {
+                    continue;
+                }
+                for (k = 0; k < numVertices; k++) {
+                    geVertex* vertexBlock = vertices + k;
+                    geVertex* vertexWorld = shape.vertices + (currentBlockIndex * numVertices + k);
 
-                vertexWorld->normal.x = vertexBlock->normal.x;
-                vertexWorld->normal.y = vertexBlock->normal.y;
-                vertexWorld->normal.z = vertexBlock->normal.z;
+                    vertexWorld->normal.x = vertexBlock->normal.x;
+                    vertexWorld->normal.y = vertexBlock->normal.y;
+                    vertexWorld->normal.z = vertexBlock->normal.z;
 
-                vertexWorld->pos.x = vertexBlock->pos.x + line;
-                vertexWorld->pos.y = vertexBlock->pos.y + j;
-                vertexWorld->pos.z = vertexBlock->pos.z + column;
+                    vertexWorld->pos.x = vertexBlock->pos.x + oX;
+                    vertexWorld->pos.y = vertexBlock->pos.y + oY;
+                    vertexWorld->pos.z = vertexBlock->pos.z + oZ;
 
-                vertexWorld->texCoords.x = vertexBlock->texCoords.x;
-                vertexWorld->texCoords.y = vertexBlock->texCoords.y;
-                vertexWorld->texCoords.z = vertexBlock->texCoords.z;
+                    vertexWorld->texCoords.x = vertexBlock->texCoords.x;
+                    vertexWorld->texCoords.y = vertexBlock->texCoords.y;
+                    vertexWorld->texCoords.z = vertexBlock->texCoords.z;
+                }
+                for (k = 0; k < numIndices; k++) {
+                    shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
+                }
+                currentBlockIndex++;
             }
-            for (k = 0; k < numIndices; k++) {
-                shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
-            }
-            currentBlockIndex++;
         }
     }
 
@@ -787,31 +794,34 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     currentBlockIndex = 0;
     size_t indicesJump = 0;
     size_t verticesJump = 0;
-    for (i = 0; i < surfaceSize * surfaceSize; i++) {
-        if (heightMap[i] == 1) {
-            currentBlockIndex++;
-            continue;
-        }
-        for (j = 0; j < heightMap[i]; j++) {
-            if (j == 0) {
-                removeFace(&shape, currentBlockIndex * numVertices - verticesJump + 16, currentBlockIndex * numIndices - indicesJump + 24, 1);
-                verticesJump += 4;
-                indicesJump += 6;
-            } else if (j == heightMap[i] - 1) {
-                removeFace(&shape, currentBlockIndex * numVertices - verticesJump + 20, currentBlockIndex * numIndices - indicesJump + 30, 1);
-                verticesJump += 4;
-                indicesJump += 6;
-            } else {
-                removeFace(&shape, currentBlockIndex * numVertices - verticesJump + 16, currentBlockIndex * numIndices - indicesJump + 24, 2);
-                verticesJump += 8;
-                indicesJump += 12;
+    for (oX = 0; oX < surfaceSize; oX++) {
+        for (oZ = 0; oZ < surfaceSize; oZ++) {
+            for (oY = 0; oY < MAX_HEIGHT; oY++) {
+                if (map[oX][oZ][oY] == 0) {
+                    continue;
+                }
+
+                bool isAdjacent[] = {
+                        oZ + 1 < surfaceSize && map[oX][oZ + 1][oY] != 0,
+                        oZ != 0 && map[oX][oZ - 1][oY] != 0,
+
+                        oX != 0 && map[oX - 1][oZ][oY] != 0,
+                        oX + 1 < surfaceSize && map[oX + 1][oZ][oY] != 0,
+
+                        oY + 1 < MAX_HEIGHT && map[oX][oZ][oY + 1] != 0,
+                        oY != 0 && map[oX][oZ][oY - 1] != 0,
+                };
+
+                for (k = 0; k < 6; k++) {
+                    if ((k != 12) && isAdjacent[k]) {
+                        removeFace(&shape, currentBlockIndex * numVertices - verticesJump + k * 4, currentBlockIndex * numIndices - indicesJump + k * 6, 1);
+                        verticesJump += 4;
+                        indicesJump += 6;
+                    }
+                }
+                currentBlockIndex++;
             }
-            currentBlockIndex++;
-//            break;
         }
-        // Jump over top block
-//        currentBlockIndex++;
-//        break;
     }
 
     realloc(shape.vertices, shape.numVertices * sizeof(geVertex));

@@ -152,7 +152,7 @@ void initObjects() {
     objects[772].rotation.x = 90;
 
     objects[773].pos.x = -3;
-    objects[773].pos.y = 0;
+    objects[773].pos.y = 1;
     objects[773].pos.z = -4;
     objects[773].size.x = objects[773].size.y = objects[773].size.z = 1;
     objects[773].rotation.y = 60;

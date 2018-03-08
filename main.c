@@ -14,7 +14,7 @@
 SDL_Window* window = NULL;
 SDL_GLContext* context = NULL;
 
-const int SCREEN_HEIGHT = 720, SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 1080, SCREEN_WIDTH = 1920;
 
 //void DebugCallbackARB(GLenum source​, GLenum type​, GLuint id​, GLenum severity​, GLsizei length​, const GLchar* message​, const GLvoid* userParam​) {
 //
@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
         glUseProgram(programs[GE_PROGRAM_MAIN]);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         update();
-        glViewport(0, 0, 1280, 720);
+        glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
         drawScene();
         drawGUI();
 
