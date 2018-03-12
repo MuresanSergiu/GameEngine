@@ -37,3 +37,29 @@ char** readFile(char* path) {
     }
     return result;
 }
+
+void printFace(geVertex* v) {
+    printf("Positions are \n\t");
+    printVec3(&v[0].pos);
+    printf("\n\t");
+    printVec3(&v[1].pos);
+    printf("\n\t");
+    printVec3(&v[2].pos);
+    printf("\n\t");
+    printVec3(&v[3].pos);
+    printf("\nAnd normal is \n\t");
+    printVec3(&v[0].normal);
+    printf("\nAnd texture positions are \n\t");
+    printVec3(&v[0].texCoords);
+    printf("\n\t");
+    printVec3(&v[1].texCoords);
+    printf("\n\t");
+    printVec3(&v[2].texCoords);
+    printf("\n\t");
+    printVec3(&v[3].texCoords);
+    printf("\n");
+}
+
+void printVec3(kmVec3* v) {
+    printf("( %f, %f, %f )", v->x, v->y, v->z);
+}

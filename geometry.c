@@ -47,10 +47,12 @@ void initShapes() {
     shapes[GE_TERRAIN_NOISE] = createNoiseTerrain(40);
     shapes[GE_VERTEX_WORLD_DUMB] = createVoxelWorldDumb(8, 3);
     shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(8, 3);
+    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(8, 3);
 
     // Comparison of worlds
     printf("The dumb version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_DUMB].numVertices, shapes[GE_VERTEX_WORLD_DUMB].numIndices);
     printf("The culled version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_CULLED].numVertices, shapes[GE_VERTEX_WORLD_CULLED].numIndices);
+    printf("The greedy version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_GREEDY].numVertices, shapes[GE_VERTEX_WORLD_GREEDY].numIndices);
 }
 
 geShape createCube(bool inverted) {
@@ -549,35 +551,35 @@ geShape createNoiseTerrain(int tess) {
 geShape createVoxelWorldDumb(size_t surfaceSize, size_t height) {
     geVertex vertices[] = {
             // FRONT
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.25f , 1 / 3.0f}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.5f, 1 / 3.0f }},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.5f, 2 / 3.0f }},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.25f, 2 / 3.0f }},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 0}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 1}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 1}},
             // BACK
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1 / 3.0f}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 2 / 3.0f}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0.75f, 2 / 3.0f}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0.75f, 1 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 0}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 0}},
             // LEFT
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1 / 3.0f}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {0.25f, 1 / 3.0f}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {0.25f, 2 / 3.0f}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 2 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1}},
             // RIGHT
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.75f, 1 / 3.0f}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.75f, 2 / 3.0f}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.5f, 2 / 3.0f}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.5f, 1 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0}},
             // TOP
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.5f, 1}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.25f, 1}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.25f, 2 / 3.0f}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.5f, 2 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1}},
             // BOTTOM
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.25f, 1 / 3.0f}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.25f, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.5f, 0}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.5f, 1 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1}},
     };
 
     GLuint indices[] = {
@@ -607,7 +609,7 @@ geShape createVoxelWorldDumb(size_t surfaceSize, size_t height) {
 
     for (i = 0; i < surfaceSize; i++) {
         for (j = 0; j < surfaceSize; j++) {
-            int noise = (int) floorf(sdnoise2(i, j, NULL, NULL) * 3.0f);
+            int noise = (int) floorf(sdnoise2(i, j, NULL, NULL) * 2.0f);
             heightMap[i * surfaceSize + j] = (size_t) (height + noise);
             arrayLength += (size_t) (height + noise);
         }
@@ -655,7 +657,7 @@ geShape createVoxelWorldDumb(size_t surfaceSize, size_t height) {
     return shape;
 }
 
-void removeFace(geShape* shape, uint64_t offsetVertex, uint64_t offsetIndex, uint32_t numFaces) {
+void removeFace(geShape* shape, size_t offsetVertex, size_t offsetIndex, size_t numFaces) {
     size_t k;
     memcpy(
             shape->vertices + offsetVertex,
@@ -679,35 +681,35 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     // <editor-fold> INIT STAGE
     geVertex vertices[] = {
             // FRONT
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.25f , 1 / 3.0f}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.5f, 1 / 3.0f }},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.5f, 2 / 3.0f }},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0.25f, 2 / 3.0f }},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 0}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 1}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 1}},
             // BACK
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1 / 3.0f}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 2 / 3.0f}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0.75f, 2 / 3.0f}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0.75f, 1 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 0}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 0}},
             // LEFT
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1 / 3.0f}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {0.25f, 1 / 3.0f}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {0.25f, 2 / 3.0f}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 2 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1}},
             // RIGHT
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.75f, 1 / 3.0f}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.75f, 2 / 3.0f}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.5f, 2 / 3.0f}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0.5f, 1 / 3.0f}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0}},
             // TOP
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.5f, 1}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.25f, 1}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.25f, 2 / 3.0f}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0.5f, 2 / 3.0f}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1}},
             // BOTTOM
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.25f, 1 / 3.0f}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.25f, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.5f, 0}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0.5f, 1 / 3.0f}},
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1}},
     };
 
     GLuint indices[] = {
@@ -738,7 +740,7 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
 
     for (oX = 0; oX < surfaceSize; oX++) {
         for (oZ = 0; oZ < surfaceSize; oZ++) {
-            int noise = (int) floorf(sdnoise2(oX, oZ, NULL, NULL) * 3.0f);
+            int noise = (int) floorf(sdnoise2(oX, oZ, NULL, NULL) * 2.0f);
             for (oY = 0; oY < height + noise; oY++) {
                 map[oX][oZ][oY] = 1;
             }
@@ -790,7 +792,6 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     }
 
     // </editor-fold>
-//    return shape;
     currentBlockIndex = 0;
     size_t indicesJump = 0;
     size_t verticesJump = 0;
@@ -826,6 +827,243 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
 
     realloc(shape.vertices, shape.numVertices * sizeof(geVertex));
     realloc(shape.indices, shape.numIndices * sizeof(GLuint));
+
+    return shape;
+}
+
+bool sameOrientation(geVertex* s1, geVertex* s2) {
+    return     memcmp(&s1[0].normal, &s1[1].normal, sizeof(kmVec3)) == 0
+            && memcmp(&s1[1].normal, &s1[2].normal, sizeof(kmVec3)) == 0
+            && memcmp(&s1[2].normal, &s1[3].normal, sizeof(kmVec3)) == 0
+            && memcmp(&s1[3].normal, &s2[0].normal, sizeof(kmVec3)) == 0
+            && memcmp(&s2[0].normal, &s2[1].normal, sizeof(kmVec3)) == 0
+            && memcmp(&s2[1].normal, &s2[2].normal, sizeof(kmVec3)) == 0
+            && memcmp(&s2[2].normal, &s2[3].normal, sizeof(kmVec3)) == 0;
+}
+
+geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
+    // <editor-fold> INIT STAGE
+    geVertex vertices[] = {
+            // FRONT
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 0}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 1}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 1}},
+            // BACK
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 0}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 0}},
+            // LEFT
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1}},
+            // RIGHT
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0}},
+            // TOP
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1}},
+            // BOTTOM
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1}},
+    };
+
+    GLuint indices[] = {
+            // FRONT
+            0, 1, 2,
+            2, 3, 0,
+            // BACK
+            4, 5, 6,
+            6, 7, 4,
+            // LEFT
+            8, 9, 10,
+            10, 11, 8,
+            // RIGHT
+            12, 13, 14,
+            14, 15, 12,
+            // TOP
+            16, 17, 18,
+            18, 19, 16,
+            // BOTTOM
+            20, 23, 22,
+            22, 21, 20
+    };
+
+    size_t oX, oY, oZ, k;
+    size_t arrayLength = 0;
+    int map[surfaceSize][surfaceSize][MAX_HEIGHT];
+    memset(map, 0, sizeof(int) * surfaceSize * surfaceSize * MAX_HEIGHT);
+
+    for (oX = 0; oX < surfaceSize; oX++) {
+        for (oZ = 0; oZ < surfaceSize; oZ++) {
+            int noise = (int) floorf(sdnoise2(oX, oZ, NULL, NULL) * 2.0f);
+            for (oY = 0; oY < height + noise; oY++) {
+                map[oX][oZ][oY] = 1;
+            }
+            arrayLength += (size_t) (height + noise);
+        }
+    }
+    printf("Array length for greedy is %llu\n", arrayLength);
+
+    geShape shape;
+
+    size_t numVertices = 24;
+    size_t numIndices = 36;
+
+    shape.numVertices = numVertices * arrayLength;
+    shape.numIndices = numIndices * arrayLength;
+    shape.vertices = calloc(numVertices * arrayLength, sizeof(geVertex));
+    shape.indices = calloc(numIndices * arrayLength, sizeof(GLuint));
+
+    size_t currentBlockIndex = 0;
+
+    for (oX = 0; oX < surfaceSize; oX++) {
+        for (oZ = 0; oZ < surfaceSize; oZ++) {
+            for (oY = 0; oY < MAX_HEIGHT; oY++) {
+                if (map[oX][oZ][oY] == 0) {
+                    continue;
+                }
+                for (k = 0; k < numVertices; k++) {
+                    geVertex* vertexBlock = vertices + k;
+                    geVertex* vertexWorld = shape.vertices + (currentBlockIndex * numVertices + k);
+
+                    vertexWorld->normal.x = vertexBlock->normal.x;
+                    vertexWorld->normal.y = vertexBlock->normal.y;
+                    vertexWorld->normal.z = vertexBlock->normal.z;
+
+                    vertexWorld->pos.x = vertexBlock->pos.x + oX;
+                    vertexWorld->pos.y = vertexBlock->pos.y + oY;
+                    vertexWorld->pos.z = vertexBlock->pos.z + oZ;
+
+                    vertexWorld->texCoords.x = vertexBlock->texCoords.x;
+                    vertexWorld->texCoords.y = vertexBlock->texCoords.y;
+                    vertexWorld->texCoords.z = vertexBlock->texCoords.z;
+                }
+                for (k = 0; k < numIndices; k++) {
+                    shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
+                }
+                currentBlockIndex++;
+            }
+        }
+    }
+
+    // </editor-fold>
+    // <editor-fold> CULLING STAGE
+    currentBlockIndex = 0;
+    size_t indicesJump = 0;
+    size_t verticesJump = 0;
+    for (oX = 0; oX < surfaceSize; oX++) {
+        for (oZ = 0; oZ < surfaceSize; oZ++) {
+            for (oY = 0; oY < MAX_HEIGHT; oY++) {
+                if (map[oX][oZ][oY] == 0) {
+                    continue;
+                }
+
+                bool isAdjacent[] = {
+                        oZ + 1 < surfaceSize && map[oX][oZ + 1][oY] != 0,
+                        oZ != 0 && map[oX][oZ - 1][oY] != 0,
+
+                        oX != 0 && map[oX - 1][oZ][oY] != 0,
+                        oX + 1 < surfaceSize && map[oX + 1][oZ][oY] != 0,
+
+                        oY + 1 < MAX_HEIGHT && map[oX][oZ][oY + 1] != 0,
+                        oY != 0 && map[oX][oZ][oY - 1] != 0,
+                };
+
+                for (k = 0; k < 6; k++) {
+                    if ((k != 12) && isAdjacent[k]) {
+                        removeFace(&shape, currentBlockIndex * numVertices - verticesJump + k * 4, currentBlockIndex * numIndices - indicesJump + k * 6, 1);
+                        verticesJump += 4;
+                        indicesJump += 6;
+                    }
+                }
+                currentBlockIndex++;
+            }
+        }
+    }
+
+    realloc(shape.vertices, shape.numVertices * sizeof(geVertex));
+    realloc(shape.indices, shape.numIndices * sizeof(GLuint));
+    // </editor-fold>
+
+    size_t l;
+    for (k = 0; k < shape.numVertices; k += 4) {
+        geVertex* kFace = shape.vertices + k;
+        for (l = 0; l < shape.numVertices; l += 4) {
+            geVertex* lFace = shape.vertices + l;
+            if (k == l) {
+                continue;
+            }
+            size_t i, j, count = 0;
+
+            size_t sameIndices[4];
+            for (i = 0; i < 4; i++) {
+                for (j = 0; j < 4; j++) {
+                    if (memcmp(&kFace[i].pos, &lFace[j].pos, sizeof(kmVec3)) == 0) {
+                        sameIndices[count * 2] = i;
+                        sameIndices[count * 2 + 1] = j;
+                        count++;
+                        break;
+                    }
+                }
+            }
+
+            if (count == 2 && memcmp(&kFace[0].normal, &lFace[0].normal, sizeof(kmVec3)) == 0) {
+
+                printf("Found same indices with same orientation here: %llu with %llu and %llu with %llu\n", sameIndices[0], sameIndices[1], sameIndices[2], sameIndices[3]);
+                printf("And their positions are \n\t");
+                printVec3(&kFace[sameIndices[0]].pos);
+                printf("\n\t");
+                printVec3(&lFace[sameIndices[1]].pos);
+                printf("\n\t");
+                printVec3(&kFace[sameIndices[2]].pos);
+                printf("\n\t");
+                printVec3(&lFace[sameIndices[3]].pos);
+                printf("\n");
+                printFace(kFace);
+                printFace(lFace);
+
+                memcpy(&kFace[sameIndices[0]].pos, &lFace[sameIndices[0]].pos, sizeof(kmVec3));
+                memcpy(&kFace[sameIndices[2]].pos, &lFace[sameIndices[2]].pos, sizeof(kmVec3));
+
+                size_t minVertex;
+                if (sameIndices[0] == 0 && sameIndices[2] == 3 || sameIndices[0] == 3 && sameIndices[2] == 0) {
+                    // Cover the case where 0 and 3 are common
+                    minVertex = 3;
+                } else {
+                    minVertex = __min(sameIndices[0], sameIndices[2]);
+                }
+
+                geVertex* kFaceOppositeSideVertex = kFace + (minVertex == 0 ? 3 : minVertex - 1);
+                float texCoordDiffX = fabsf(kFaceOppositeSideVertex->texCoords.x - kFace[minVertex].texCoords.x);
+                float texCoordDiffY = fabsf(kFaceOppositeSideVertex->texCoords.y - kFace[minVertex].texCoords.y);
+
+                printf("Got texcoord differences of x: %f and y: %f\n", texCoordDiffX, texCoordDiffY);
+                if (texCoordDiffX != 0) {
+                    kFace[sameIndices[0]].texCoords.x += 1;
+                    kFace[sameIndices[2]].texCoords.x += 1;
+                } else if (texCoordDiffY != 0) {
+                    kFace[sameIndices[0]].texCoords.y += 1;
+                    kFace[sameIndices[2]].texCoords.y += 1;
+                } else {
+                    printf("-------------- NO DIFFERENCE -----------------------------------------------------------\n");
+                }
+
+                removeFace(&shape, l, l / 2 * 3, 1);
+                l -= 4;
+//                return shape;
+            }
+
+        }
+    }
 
     return shape;
 }

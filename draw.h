@@ -15,7 +15,7 @@ GLuint rbos[1];
 GLuint fbos[50];
 GLuint vbos[2];
 
-geObject objects[774];
+geObject objects[775];
 
 void initScene();
 void update();

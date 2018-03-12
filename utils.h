@@ -6,9 +6,12 @@
 #define GAMEENGINE_UTILS_H
 
 #include <stdbool.h>
+#include "types.h"
 
 #define PI 3.14159265f
 
 char** readFile(char* path);
+void printFace(geVertex* v);
+void printVec3(kmVec3* v);
 
 #endif //GAMEENGINE_UTILS_H

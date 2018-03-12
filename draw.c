@@ -156,8 +156,16 @@ void initObjects() {
     objects[773].pos.z = -4;
     objects[773].size.x = objects[773].size.y = objects[773].size.z = 1;
     objects[773].rotation.y = 60;
-    objects[773].texture = tex[0];
-    objects[773].shape = shapes + GE_VERTEX_WORLD_CULLED;
+    objects[773].texture = tex[12];
+    objects[773].shape = shapes + GE_VERTEX_WORLD_DUMB;
+
+    objects[774].pos.x = -12;
+    objects[774].pos.y = 1;
+    objects[774].pos.z = -10;
+    objects[774].size.x = objects[774].size.y = objects[774].size.z = 1;
+    objects[774].rotation.y = 60;
+    objects[774].texture = tex[12];
+    objects[774].shape = shapes + GE_VERTEX_WORLD_GREEDY;
 }
 
 /* EXTERNAL FUNCTIONS */
@@ -247,6 +255,9 @@ void initScene() {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 16384, 16384, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    loadTexture(tex + 11, "../res/cobble.png");
+    loadTexture(tex + 12, "../res/cobble2.png");
 
     initObjects();
 
