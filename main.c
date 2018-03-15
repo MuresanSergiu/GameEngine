@@ -86,13 +86,13 @@ void updateKeyHandles() {
         kmVec3Add(&camera.pos, &camera.pos, &s);
     } else if (keymap[SDL_SCANCODE_ESCAPE]) {
         SDL_SetRelativeMouseMode(SDL_FALSE);
-        glUniform3f(100, -0.1f, -0.1f, -0.1f);
+        glUniform3f(_U(_mouseOutColor), -0.1f, -0.1f, -0.1f);
     } else if (keymap[SDL_SCANCODE_1]) {
         debugSpecularPower += 0.5;
-        glUniform1f(500, debugSpecularPower);
+        glUniform1f(_U(specularPower), debugSpecularPower);
     } else if (keymap[SDL_SCANCODE_2]) {
         debugSpecularPower -= 0.5;
-        glUniform1f(500, debugSpecularPower);
+        glUniform1f(_U(specularPower), debugSpecularPower);
     } else
         return;
 }
@@ -101,7 +101,7 @@ void updateMouseHandles(int x, int y) {
     if (mousemap[SDL_BUTTON_LEFT]) {
         if (!SDL_GetRelativeMouseMode()) {
             SDL_SetRelativeMouseMode(SDL_TRUE);
-            glUniform3f(100, 0, 0, 0);
+            glUniform3f(_U(_mouseOutColor), 0, 0, 0);
         }
     }
 }
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
 
     initScene();
     initGUI();
-    glUniform1f(500, debugSpecularPower);
+    glUniform1f(_U(specularPower), debugSpecularPower);
 
     SDL_Event e;
     memset(&camera, 0, sizeof(camera));

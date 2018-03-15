@@ -4,6 +4,7 @@
 
 #include <kazmath/vec3.h>
 #include "texture.h"
+#include "shader.h"
 
 /* EXTERNAL FUNCTIONS */
 
@@ -87,7 +88,7 @@ void loadTextureCubeMap(GLuint* tOut, const char* path) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 0);
-    glUniform1i(111, 1);
+    glUniform1i(_U(texCube), 1);
 
     for (int i = 0; i < 6; i++) {
         free(pixelsSky[i]);

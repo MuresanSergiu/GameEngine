@@ -9,6 +9,7 @@
 #include "types.h"
 
 #define PI 3.14159265f
+#define STRINGIFY(X) #X
 
 char** readFile(char* path);
 void printFace(geVertex* v);

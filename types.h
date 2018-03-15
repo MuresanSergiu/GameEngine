@@ -36,7 +36,6 @@ typedef struct geObject {
     kmVec3 size;
     kmVec3 rotation;
 
-    bool optionDisableTranslation;
 } geObject;
 
 typedef struct geCamera {

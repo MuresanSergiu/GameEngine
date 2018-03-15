@@ -49,7 +49,7 @@ void renderMirror() {
 //    kmVec3MultiplyMat4(&lightPoint2, &lightPoint2, &rot);
 //    objects[712].pos = lightPoint2;
 //    objects[712].rotation.z += 0.01f;
-//    glUniform3fv(103, 1, (const GLfloat *) &lightPoint2);
+//    glUniform3fv(_U(pl), 1, (const GLfloat *) &lightPoint2);
 
     kmMat4 scale;
     kmMat4 translation;
@@ -59,7 +59,7 @@ void renderMirror() {
     kmMat4Translation(&translation, 1.0f / 2, 1.0f / 2, 0);
     kmMat4Multiply(&rot, &rot, &translation);
     kmMat4Multiply(&rot, &rot, &scale);
-    glUniformMatrix4fv(3, 1, GL_FALSE, rot.mat);
+    glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
 
     drawScene();
 }
@@ -102,16 +102,16 @@ void renderShadowMap() {
     kmMat4Multiply(&bias, &biasTranslate, &biasScale);
 
     glUseProgram(programs[GE_PROGRAM_MAIN]);
-    glUniformMatrix4fv(4, 1, GL_FALSE, view.mat);
-    glUniformMatrix4fv(5, 1, GL_FALSE, projection.mat);
-    glUniformMatrix4fv(6, 1, GL_FALSE, bias.mat);
+    glUniformMatrix4fv(_U(shadowView), 1, GL_FALSE, view.mat);
+    glUniformMatrix4fv(_U(shadowProjection), 1, GL_FALSE, projection.mat);
+    glUniformMatrix4fv(_U(shadowScaleBias), 1, GL_FALSE, bias.mat);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, tex[10]);
-    glUniform1i(112, 2);
+    glUniform1i(_U(shadow), 2);
 
     glUseProgram(programs[GE_PROGRAM_SHADOW]);
-    glUniformMatrix4fv(1, 1, GL_FALSE, view.mat);
-    glUniformMatrix4fv(2, 1, GL_FALSE, projection.mat);
+    glUniformMatrix4fv(_U(view), 1, GL_FALSE, view.mat);
+    glUniformMatrix4fv(_U(projection), 1, GL_FALSE, projection.mat);
 
     drawScene();
 }

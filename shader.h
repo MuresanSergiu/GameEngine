@@ -2,8 +2,12 @@
 // Created by Afterwind on 9/17/2017.
 //
 
+#include "utils.h"
+
 #ifndef GAMEENGINE_SHADER_H
 #define GAMEENGINE_SHADER_H
+
+#define _U(X) glGetUniformLocation(programs[GE_PROGRAM_MAIN], STRINGIFY(X))
 
 typedef enum {
     GE_PROGRAM_MAIN,

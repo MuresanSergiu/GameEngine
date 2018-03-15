@@ -281,21 +281,21 @@ void update() {
     kmVec3MultiplyMat4(&lightPoint, &lightPoint, &rot);
     objects[712].pos = lightPoint;
     objects[712].rotation.z += 0.004f;
-    glUniform3fv(103, 1, (const GLfloat *) &lightPoint);
+    glUniform3fv(_U(pl), 1, (const GLfloat *) &lightPoint);
 
     float skyDim = cosf(objects[712].rotation.z * PI / 180.0f);
     if (skyDim <= 0.1f) {
         skyDim = 0.1f;
     }
-    glUniform1f(106, skyDim);
+    glUniform1f(_U(skyDim), skyDim);
 
     kmVec3 lightDirection = {0, 0, 0};
     kmVec3Subtract(&lightDirection, &lightDirection, &lightPoint);
     kmVec3Normalize(&lightDirection, &lightDirection);
-    glUniform3fv(105, 1, (const GLfloat *) &lightDirection);
+    glUniform3fv(_U(dl), 1, (const GLfloat *) &lightDirection);
 
     kmMat4Identity(&rot);
-    glUniformMatrix4fv(3, 1, GL_FALSE, rot.mat);
+    glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
 
     for (int i = 0; i < (int) sizeof(objects) / sizeof(geObject); i++) {
         geObject* obj = objects + i;
@@ -320,38 +320,38 @@ void drawScene() {
         }
 
         if (i == 712 || i == 715) {// If it's the light cube or the sky
-            glUniform1i(10, true);
-            glUniform4f(101, 1, 1, 1, 1);
-
+            glUniform1i(_U(exemptFromView), true);
+            glUniform4f(_U(lightAmbient), 1, 1, 1, 1);
         } else {
-            glUniform1i(10, false);
-            glUniform4f(101, 0.1f, 0.1f, 0.1f, 1);
+
+            glUniform1i(_U(exemptFromView), false);
+            glUniform4f(_U(lightAmbient), 0.1f, 0.1f, 0.1f, 1);
         }
 
         if (i == 715) { // If it's the sky
-            glUniform1i(11, true);
+            glUniform1i(_U(useCubeMap), true);
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_CUBE_MAP, obj->texture);
         } else {
-            glUniform1i(11, false);
+            glUniform1i(_U(useCubeMap), false);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, obj->texture);
         }
 
         if (i >= 512 && i <= 712 || i == 721) { // Set ambient light
-            glUniform4f(101, 1, 1, 1, 1);
+            glUniform4f(_U(lightAmbient), 1, 1, 1, 1);
         } else {
-            glUniform4f(101, 0.3f, 0.3f, 0.3f, 1);
+            glUniform4f(_U(lightAmbient), 0.3f, 0.3f, 0.3f, 1);
         }
 
         if (i >= 718 && i <= 720) { // If it's the GUI
             if (SDL_GetRelativeMouseMode() == SDL_TRUE) {
                 continue;
             }
-            glUniform1i(12, true);
+            glUniform1i(_U(exemptFromViewProjection), true);
             continue;
         } else {
-            glUniform1i(12, false);
+            glUniform1i(_U(exemptFromViewProjection), false);
         }
 
         kmMat4 rot, scale, translation;
@@ -359,10 +359,10 @@ void drawScene() {
             kmMat4Scaling(&scale, 0.5f, 0.5f, 1);
             kmMat4Translation(&translation, 0.5f, 0.5f, 0);
             kmMat4Multiply(&rot, &scale, &translation);
-            glUniformMatrix4fv(3, 1, GL_FALSE, rot.mat);
+            glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
         } else {
             kmMat4Identity(&rot);
-            glUniformMatrix4fv(3, 1, GL_FALSE, rot.mat);
+            glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
         }
 
         drawObject(obj);
@@ -389,7 +389,7 @@ void drawObject(geObject* obj) {
     kmMat4Multiply(&model, &model, &rotY);
     kmMat4Multiply(&model, &model, &rotZ);
 
-    glUniformMatrix4fv(0, 1, GL_FALSE, model.mat);
+    glUniformMatrix4fv(_U(model), 1, GL_FALSE, model.mat);
 
     // DRAW THE OBJECT
     glBindVertexArray(obj->shape->vao);

@@ -9,6 +9,8 @@
 #include "utils.h"
 #include "simplex_noise.h"
 
+#define MAX_HEIGHT 128
+
 float x = 0;
 float y = 0;
 float z = 0;
@@ -31,6 +33,25 @@ void shapeFromVerticesAndIndices(geShape* pOut, geVertex* vertices, unsigned lon
             memcpy(pOut->vertices + i, vertices + indices[i], sizeof(geVertex));
         }
     }
+}
+
+void removeFace(geShape* shape, size_t offsetVertex, size_t offsetIndex, size_t numFaces) {
+    size_t k;
+    memcpy(
+            shape->vertices + offsetVertex,
+            shape->vertices + (offsetVertex + 4 * numFaces),
+            sizeof(geVertex) * (shape->numVertices - (offsetVertex + 4 * numFaces))
+    );
+    memcpy(
+            shape->indices + offsetIndex,
+            shape->indices + (offsetIndex + 6 * numFaces),
+            sizeof(GLuint) * (shape->numIndices - (offsetIndex + 6 * numFaces))
+    );
+    for (k = offsetIndex; k < shape->numIndices; k++) {
+        shape->indices[k] -= (4 * numFaces);
+    }
+    shape->numVertices -= (4 * numFaces);
+    shape->numIndices -= (6 * numFaces);
 }
 
 /* EXTERNAL FUNCTIONS */
@@ -657,26 +678,6 @@ geShape createVoxelWorldDumb(size_t surfaceSize, size_t height) {
     return shape;
 }
 
-void removeFace(geShape* shape, size_t offsetVertex, size_t offsetIndex, size_t numFaces) {
-    size_t k;
-    memcpy(
-            shape->vertices + offsetVertex,
-            shape->vertices + (offsetVertex + 4 * numFaces),
-            sizeof(geVertex) * (shape->numVertices - (offsetVertex + 4 * numFaces))
-    );
-    memcpy(
-            shape->indices + offsetIndex,
-            shape->indices + (offsetIndex + 6 * numFaces),
-            sizeof(GLuint) * (shape->numIndices - (offsetIndex + 6 * numFaces))
-    );
-    for (k = offsetIndex; k < shape->numIndices; k++) {
-        shape->indices[k] -= (4 * numFaces);
-    }
-    shape->numVertices -= (4 * numFaces);
-    shape->numIndices -= (6 * numFaces);
-}
-
-#define MAX_HEIGHT 128
 geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     // <editor-fold> INIT STAGE
     geVertex vertices[] = {
@@ -831,170 +832,10 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     return shape;
 }
 
-bool sameOrientation(geVertex* s1, geVertex* s2) {
-    return     memcmp(&s1[0].normal, &s1[1].normal, sizeof(kmVec3)) == 0
-            && memcmp(&s1[1].normal, &s1[2].normal, sizeof(kmVec3)) == 0
-            && memcmp(&s1[2].normal, &s1[3].normal, sizeof(kmVec3)) == 0
-            && memcmp(&s1[3].normal, &s2[0].normal, sizeof(kmVec3)) == 0
-            && memcmp(&s2[0].normal, &s2[1].normal, sizeof(kmVec3)) == 0
-            && memcmp(&s2[1].normal, &s2[2].normal, sizeof(kmVec3)) == 0
-            && memcmp(&s2[2].normal, &s2[3].normal, sizeof(kmVec3)) == 0;
-}
-
 geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
-    // <editor-fold> INIT STAGE
-    geVertex vertices[] = {
-            // FRONT
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 0}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 1}},
-            // BACK
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 0}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 1}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 0}},
-            // LEFT
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1}},
-            // RIGHT
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0}},
-            // TOP
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1}},
-            // BOTTOM
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1}},
-    };
+    size_t l, k;
+    geShape shape = createVoxelWorldWithCulling(surfaceSize, height);
 
-    GLuint indices[] = {
-            // FRONT
-            0, 1, 2,
-            2, 3, 0,
-            // BACK
-            4, 5, 6,
-            6, 7, 4,
-            // LEFT
-            8, 9, 10,
-            10, 11, 8,
-            // RIGHT
-            12, 13, 14,
-            14, 15, 12,
-            // TOP
-            16, 17, 18,
-            18, 19, 16,
-            // BOTTOM
-            20, 23, 22,
-            22, 21, 20
-    };
-
-    size_t oX, oY, oZ, k;
-    size_t arrayLength = 0;
-    int map[surfaceSize][surfaceSize][MAX_HEIGHT];
-    memset(map, 0, sizeof(int) * surfaceSize * surfaceSize * MAX_HEIGHT);
-
-    for (oX = 0; oX < surfaceSize; oX++) {
-        for (oZ = 0; oZ < surfaceSize; oZ++) {
-            int noise = (int) floorf(sdnoise2(oX, oZ, NULL, NULL) * 2.0f);
-            for (oY = 0; oY < height + noise; oY++) {
-                map[oX][oZ][oY] = 1;
-            }
-            arrayLength += (size_t) (height + noise);
-        }
-    }
-    printf("Array length for greedy is %llu\n", arrayLength);
-
-    geShape shape;
-
-    size_t numVertices = 24;
-    size_t numIndices = 36;
-
-    shape.numVertices = numVertices * arrayLength;
-    shape.numIndices = numIndices * arrayLength;
-    shape.vertices = calloc(numVertices * arrayLength, sizeof(geVertex));
-    shape.indices = calloc(numIndices * arrayLength, sizeof(GLuint));
-
-    size_t currentBlockIndex = 0;
-
-    for (oX = 0; oX < surfaceSize; oX++) {
-        for (oZ = 0; oZ < surfaceSize; oZ++) {
-            for (oY = 0; oY < MAX_HEIGHT; oY++) {
-                if (map[oX][oZ][oY] == 0) {
-                    continue;
-                }
-                for (k = 0; k < numVertices; k++) {
-                    geVertex* vertexBlock = vertices + k;
-                    geVertex* vertexWorld = shape.vertices + (currentBlockIndex * numVertices + k);
-
-                    vertexWorld->normal.x = vertexBlock->normal.x;
-                    vertexWorld->normal.y = vertexBlock->normal.y;
-                    vertexWorld->normal.z = vertexBlock->normal.z;
-
-                    vertexWorld->pos.x = vertexBlock->pos.x + oX;
-                    vertexWorld->pos.y = vertexBlock->pos.y + oY;
-                    vertexWorld->pos.z = vertexBlock->pos.z + oZ;
-
-                    vertexWorld->texCoords.x = vertexBlock->texCoords.x;
-                    vertexWorld->texCoords.y = vertexBlock->texCoords.y;
-                    vertexWorld->texCoords.z = vertexBlock->texCoords.z;
-                }
-                for (k = 0; k < numIndices; k++) {
-                    shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
-                }
-                currentBlockIndex++;
-            }
-        }
-    }
-
-    // </editor-fold>
-    // <editor-fold> CULLING STAGE
-    currentBlockIndex = 0;
-    size_t indicesJump = 0;
-    size_t verticesJump = 0;
-    for (oX = 0; oX < surfaceSize; oX++) {
-        for (oZ = 0; oZ < surfaceSize; oZ++) {
-            for (oY = 0; oY < MAX_HEIGHT; oY++) {
-                if (map[oX][oZ][oY] == 0) {
-                    continue;
-                }
-
-                bool isAdjacent[] = {
-                        oZ + 1 < surfaceSize && map[oX][oZ + 1][oY] != 0,
-                        oZ != 0 && map[oX][oZ - 1][oY] != 0,
-
-                        oX != 0 && map[oX - 1][oZ][oY] != 0,
-                        oX + 1 < surfaceSize && map[oX + 1][oZ][oY] != 0,
-
-                        oY + 1 < MAX_HEIGHT && map[oX][oZ][oY + 1] != 0,
-                        oY != 0 && map[oX][oZ][oY - 1] != 0,
-                };
-
-                for (k = 0; k < 6; k++) {
-                    if ((k != 12) && isAdjacent[k]) {
-                        removeFace(&shape, currentBlockIndex * numVertices - verticesJump + k * 4, currentBlockIndex * numIndices - indicesJump + k * 6, 1);
-                        verticesJump += 4;
-                        indicesJump += 6;
-                    }
-                }
-                currentBlockIndex++;
-            }
-        }
-    }
-
-    realloc(shape.vertices, shape.numVertices * sizeof(geVertex));
-    realloc(shape.indices, shape.numIndices * sizeof(GLuint));
-    // </editor-fold>
-
-    size_t l;
     for (k = 0; k < shape.numVertices; k += 4) {
         geVertex* kFace = shape.vertices + k;
         for (l = 0; l < shape.numVertices; l += 4) {
