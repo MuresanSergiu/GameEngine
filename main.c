@@ -114,6 +114,7 @@ int main(int argc, char** argv) {
 
     initScene();
     initGUI();
+    glUseProgram(programs[GE_PROGRAM_MAIN]);
     glUniform1f(_U(specularPower), debugSpecularPower);
 
     SDL_Event e;

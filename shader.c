@@ -44,6 +44,7 @@ void initShader(SHADER shaderID, const char* file) {
     glAttachShader(programs[shaderID], vertexShaders[shaderID]);
     glAttachShader(programs[shaderID], fragmentShaders[shaderID]);
     glLinkProgram(programs[shaderID]);
+    printf("The ID of program %s is %u\n", file, programs[shaderID]);
 
     glGetProgramiv(programs[shaderID], GL_LINK_STATUS, &success);
     if (success == GL_FALSE) {
@@ -66,4 +67,14 @@ void initAllShaders() {
     initShader(GE_PROGRAM_TEXTURE, "simpleTexture");
     initShader(GE_PROGRAM_SHADOW, "shadow");
     initShader(GE_PROGRAM_GUI, "gui");
+}
+
+GLint geGetUniformLocationWithLog(const char* name) {
+    GLuint programID;
+    glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*) &programID);
+    GLint uniformId = glGetUniformLocation(programID, name);
+    if (uniformId == -1) {
+//        fprintf(stderr, "Failed to find uniform with name %s in program with ID %u\n", name, programID);
+    }
+    return uniformId;
 }

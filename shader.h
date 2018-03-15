@@ -6,8 +6,7 @@
 
 #ifndef GAMEENGINE_SHADER_H
 #define GAMEENGINE_SHADER_H
-
-#define _U(X) glGetUniformLocation(programs[GE_PROGRAM_MAIN], STRINGIFY(X))
+#define _U(X) geGetUniformLocationWithLog(STRINGIFY(X))
 
 typedef enum {
     GE_PROGRAM_MAIN,
@@ -23,5 +22,6 @@ GLuint fragmentShaders[10];
 GLuint programs[10];
 
 void initAllShaders();
+GLint geGetUniformLocationWithLog(const char* name);
 
 #endif //GAMEENGINE_SHADER_H

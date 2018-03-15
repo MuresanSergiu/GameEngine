@@ -1,6 +1,4 @@
-#version 430 core
-
-
+#version 450 core
 
 layout (location = 10) uniform bool exemptFromView;
 layout (location = 11) uniform bool useCubeMap;
@@ -12,6 +10,7 @@ layout(location = 102) uniform vec3 viewPosition;
 layout(location = 103) uniform vec3 pl[2];
 layout(location = 105) uniform vec3 dl;
 layout(location = 106) uniform float skyDim;
+layout(location = 107) uniform float extraBrightness;
 
 layout(location = 110) uniform sampler2D tex;
 layout(location = 111) uniform samplerCube texCube;
@@ -79,6 +78,6 @@ void main(void) {
             outColor = texturedFragment + vec4(_mouseOutColor, 0);
         }
     } else {
-        outColor = texturedFragment * (lamount * visibility + lightAmbient ) + vec4(_mouseOutColor, 0);
+        outColor = texturedFragment * (lamount * visibility + lightAmbient + extraBrightness) + vec4(_mouseOutColor, 0);
     }
 }

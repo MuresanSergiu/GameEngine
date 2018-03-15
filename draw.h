@@ -10,12 +10,18 @@
 #include "types.h"
 #include "geometry.h"
 
+#define MAX_OBJECTS 1024
+
 GLuint vaos[INDEX_NUM];
 GLuint rbos[1];
 GLuint fbos[50];
 GLuint vbos[2];
 
-geObject objects[775];
+size_t numObjects;
+geObject objects[MAX_OBJECTS];
+
+void addObject(geObject* obj);
+void addObjects(geObject* obj, size_t num);
 
 void initScene();
 void update();

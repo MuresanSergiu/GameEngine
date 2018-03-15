@@ -36,6 +36,13 @@ typedef struct geObject {
     kmVec3 size;
     kmVec3 rotation;
 
+    bool exemptFromView;
+    bool exemptFromViewProjection;
+
+    GLushort glTextureId;
+    GLushort glTextureType;
+    GLfloat extraBrightness;
+
 } geObject;
 
 typedef struct geCamera {

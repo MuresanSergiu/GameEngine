@@ -14,161 +14,159 @@
 #include <SDL2/SDL_image.h>
 
 kmVec3 lightPoint = {0, 200, 0};
+geObject* sun;
+geObject* sky;
+geObject* shadowMap;
+geObject* vertexWorldDumb;
+geObject* vertexWorldCulled;
+geObject* vertexWorldGreedy;
 
 /* INTERNAL FUNCTIONS */
+
+geObject* initObject() {
+    geObject* obj = &objects[numObjects++];
+    obj->texture = 0;
+    obj->shape = 0;
+    obj->pos.x = obj->pos.y = obj->pos.z = 0;
+    obj->size.x = obj->size.y = obj->size.z = 1;
+    obj->rotation.x = obj->rotation.y = obj->rotation.z = 0;
+    obj->exemptFromView = false;
+    obj->exemptFromViewProjection = false;
+    obj->glTextureId = GL_TEXTURE0;
+    obj->glTextureType = GL_TEXTURE_2D;
+    obj->extraBrightness = 0.0f;
+    return obj;
+}
 
 void initObjects() {
     // Initialize all objects
     memset(objects, 0, sizeof(objects));
 
-    int i;
-    for (i = 0; i < 256; i++) {
-        objects[i].shape = shapes + GE_CUBE;
-        objects[i].texture = tex[0];
-        objects[i].size.x = objects[i].size.y = objects[i].size.z = 0.5f;
-        objects[i].pos.x = 1.4f * (i % 16);
-        objects[i].pos.y = 1.4f * (i / 16);
-        objects[i].pos.z = 10;
-        objects[i].rotation.y = 180;
-    }
+    sun = initObject();
+    sun->shape = shapes + GE_CUBE;
+    sun->texture = tex[4];
+    sun->size.x = sun->size.y = sun->size.z = 30;
+    sun->pos = lightPoint;
+    sun->exemptFromView = true;
+    sun->extraBrightness = 1;
+//    objects[712].shape = shapes + GE_CUBE;
+//    objects[712].texture = tex[4];
+//    objects[712].size.x = objects[712].size.y = objects[712].size.z = 30;
+//    objects[712].pos = lightPoint;
 
-    for (i = 256; i < 512; i++) {
-        objects[i].shape = shapes + GE_TERRAIN_TRIG;
-        objects[i].texture = tex[2];
-        objects[i].size.x = objects[i].size.y = objects[i].size.z = 1;
-        objects[i].pos.x = (i - 256) % 16;
-        objects[i].pos.y = 0.1f;
-        objects[i].pos.z = (i - 256) / 16;
-    }
+    sky = initObject();
+    sky->shape = shapes + GE_CUBE_INVERTED;
+    sky->texture = tex[5];
+    sky->size.x = sky->size.y = sky->size.z = 500;
+    sky->pos.y = -10;
+    sky->glTextureType = GL_TEXTURE_CUBE_MAP;
+    sky->glTextureId = GL_TEXTURE1;
+    sky->exemptFromView = true;
+    sky->extraBrightness = 1;
 
-    for (i = 512; i < 612; i++) {
-        objects[i].shape = shapes + GE_LINE;
-        objects[i].texture = tex[1];
-        objects[i].size.x = objects[i].size.y = objects[i].size.z = 100;
-        objects[i].pos.z = i - 562;
-    }
+    shadowMap = initObject();
+    shadowMap->shape = shapes + GE_SQUARE;
+    shadowMap->texture = tex[10];
+    shadowMap->size.x = shadowMap->size.y = 4;
+    shadowMap->pos.y = 2;
+    shadowMap->pos.x = -2;
+    shadowMap->pos.z = 5;
 
-    for (i = 612; i < 712; i++) {
-        objects[i].shape = shapes + GE_LINE;
-        objects[i].texture = tex[1];
-        objects[i].size.x = objects[i].size.y = objects[i].size.z = 100;
-        objects[i].pos.x = i - 662;
-        objects[i].rotation.y = 90;
-    }
+//    vertexWorldDumb = initObject();
+//    vertexWorldDumb->pos.x = -3;
+//    vertexWorldDumb->pos.y = 1;
+//    vertexWorldDumb->pos.z = -4;
+//    vertexWorldDumb->rotation.y = 60;
+//    vertexWorldDumb->texture = tex[12];
+//    vertexWorldDumb->shape = shapes + GE_VERTEX_WORLD_DUMB;
 
-    objects[712].shape = shapes + GE_CUBE;
-    objects[712].texture = tex[4];
-    objects[712].size.x = objects[712].size.y = objects[712].size.z = 30;
-    objects[712].pos = lightPoint;
+    vertexWorldGreedy = initObject();
+//    vertexWorldGreedy->pos.x = -12;
+//    vertexWorldGreedy->pos.y = 1;
+//    vertexWorldGreedy->pos.z = -10;
+//    vertexWorldGreedy->rotation.y = 60;
+    vertexWorldGreedy->texture = tex[12];
+    vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_GREEDY;
 
-    objects[713].shape = shapes + GE_TETRAHEDRON;
-    objects[713].texture = tex[0];
-    objects[713].size.x = objects[713].size.y = objects[713].size.z = 2;
-    objects[713].pos.y = 2.5f;
-    objects[713].pos.z = 3;
+    // <editor-fold> UNUSED USEFUL OBJECTS
+//    for (i = 512; i < 612; i++) {
+//        objects[i].shape = shapes + GE_LINE;
+//        objects[i].texture = tex[1];
+//        objects[i].size.x = objects[i].size.y = objects[i].size.z = 100;
+//        objects[i].pos.z = i - 562;
+//    }
+//
+//    for (i = 612; i < 712; i++) {
+//        objects[i].shape = shapes + GE_LINE;
+//        objects[i].texture = tex[1];
+//        objects[i].size.x = objects[i].size.y = objects[i].size.z = 100;
+//        objects[i].pos.x = i - 662;
+//        objects[i].rotation.y = 90;
+//    }
+//    for (i = 718; i <= 720; i++) {
+//        objects[i].shape = shapes + GE_SQUARE;
+//        objects[i].texture = tex[8];
+//        objects[i].size.x = 0.5f;
+//        objects[i].size.y = 0.2f;
+//        objects[i].size.z = 1;
+//        objects[i].pos.x = 0;
+//        objects[i].pos.y = 0.3f * (i - 718);
+//        objects[i].pos.z = 0;
+//        objects[i].rotation.y = 180;
+//    }
+//    srand(0);
+//    for (i = 722; i < 772; i++) {
+//        objects[i].shape = shapes + GE_LINE;
+//        objects[i].texture = tex[1];
+//        objects[i].size.x = 2;
+//        objects[i].size.y = 2;
+//        objects[i].size.z = 2;
+//
+//        float x1 = ((float)rand()/(float)(RAND_MAX)), x2 = ((float)rand()/(float)(RAND_MAX));
+//        float v = 1 - fabsf(4 * x1 - 2);
+//        float sinT = copysignf(0.5f * (v - sqrtf(2 - v * v)), x1 - 0.5f);
+//        float r = fminf(sinT, 0) + x2 * (sqrtf(1 - sinT * sinT) + fabsf(sinT));
+//
+//        float a = (3 * PI / 2) - asinf(sinT);
+//        float sinA = sinf(a);
+//        float cosA = cosf(a);
+//
+//        objects[i].rotation.y = 180.0f * asinf(sinT) / PI;
+//        objects[i].pos.x = 0;
+//        objects[i].pos.y = 0; //(i - 722) / 50.0f;
+//        objects[i].pos.z = r * (cosA * cosA - r * sinA * cosA) / sinA;
+//    }
 
-    objects[714].shape = shapes + GE_CYLINDER;
-    objects[714].texture = tex[0];
-    objects[714].size.x = objects[714].size.y = objects[714].size.z = 2;
-    objects[714].pos.x = 3;
-    objects[714].pos.y = 2.5f;
-    objects[714].pos.z = 3;
-
-    objects[715].shape = shapes + GE_CUBE_INVERTED;
-    objects[715].texture = tex[5];
-    objects[715].size.x = objects[715].size.y = objects[715].size.z = 500;
-    objects[715].pos.x = 0;
-    objects[715].pos.y = -10;
-    objects[715].pos.z = 0;
-
-    objects[716].shape = shapes + GE_TERRAIN_NOISE;
-    objects[716].texture = tex[2];
-    objects[716].size.x  = objects[716].size.z = 100;
-    objects[716].size.y = 100;
-    objects[716].pos.x = 0;
-    objects[716].pos.y = -0.3f;
-    objects[716].pos.z = 0;
-
-    objects[717].shape = shapes + GE_NORMALS;
-    objects[717].texture = tex[3];
-    objects[717].size.x = objects[717].size.y = objects[717].size.z = 4;
-    objects[717].pos.x = 0;
-    objects[717].pos.y = 0;
-    objects[717].pos.z = -2;
-
-    for (i = 718; i <= 720; i++) {
-        objects[i].shape = shapes + GE_SQUARE;
-        objects[i].texture = tex[8];
-        objects[i].size.x = 0.5f;
-        objects[i].size.y = 0.2f;
-        objects[i].size.z = 1;
-        objects[i].pos.x = 0;
-        objects[i].pos.y = 0.3f * (i - 718);
-        objects[i].pos.z = 0;
-        objects[i].rotation.y = 180;
-    }
-
-    objects[721].shape = shapes + GE_SQUARE;
-    objects[721].texture = tex[10];
-    objects[721].size.x = objects[721].size.y = 4;
-    objects[721].size.z = 1;
-    objects[721].pos.y = 2;
-    objects[721].pos.x = -2;
-    objects[721].pos.z = 5;
-    objects[721].rotation.y = 0;
-//    objects[721].rotation.z = 180;
-
-    srand(0);
-    for (i = 722; i < 772; i++) {
-        objects[i].shape = shapes + GE_LINE;
-        objects[i].texture = tex[1];
-        objects[i].size.x = 2;
-        objects[i].size.y = 2;
-        objects[i].size.z = 2;
-
-        float x1 = ((float)rand()/(float)(RAND_MAX)), x2 = ((float)rand()/(float)(RAND_MAX));
-        float v = 1 - fabs(4 * x1 - 2);
-        float sinT = copysign(0.5 * (v - sqrtf(2 - v * v)), x1 - 0.5);
-        float r = fmin(sinT, 0) + x2 * (sqrtf(1 - sinT * sinT) + fabs(sinT));
-
-        float a = (3 * PI / 2) - asin(sinT);
-        float sinA = sinf(a);
-        float cosA = cosf(a);
-
-        objects[i].rotation.y = 180.0f * asinf(sinT) / PI;
-        objects[i].pos.x = 0;
-        objects[i].pos.y = 0; //(i - 722) / 50.0f;
-        objects[i].pos.z = r * (cosA * cosA - r * sinA * cosA) / sinA;
-    }
-
-    objects[772].pos.x = 0;
-    objects[772].pos.y = -0.2f;
-    objects[772].pos.z = 0;
-    objects[772].size.x = 1;
-    objects[772].size.y = 1;
-    objects[772].size.z = 1;
-    objects[772].texture = tex[4];
-    objects[772].shape = shapes + GE_SQUARE;
-    objects[772].rotation.x = 90;
-
-    objects[773].pos.x = -3;
-    objects[773].pos.y = 1;
-    objects[773].pos.z = -4;
-    objects[773].size.x = objects[773].size.y = objects[773].size.z = 1;
-    objects[773].rotation.y = 60;
-    objects[773].texture = tex[12];
-    objects[773].shape = shapes + GE_VERTEX_WORLD_DUMB;
-
-    objects[774].pos.x = -12;
-    objects[774].pos.y = 1;
-    objects[774].pos.z = -10;
-    objects[774].size.x = objects[774].size.y = objects[774].size.z = 1;
-    objects[774].rotation.y = 60;
-    objects[774].texture = tex[12];
-    objects[774].shape = shapes + GE_VERTEX_WORLD_GREEDY;
+//    objects[772].pos.x = 0;
+//    objects[772].pos.y = -0.2f;
+//    objects[772].pos.z = 0;
+//    objects[772].size.x = 1;
+//    objects[772].size.y = 1;
+//    objects[772].size.z = 1;
+//    objects[772].texture = tex[4];
+//    objects[772].shape = shapes + GE_SQUARE;
+//    objects[772].rotation.x = 90;
+    // </editor-fold>
 }
 
 /* EXTERNAL FUNCTIONS */
+
+void addObject(geObject* obj) {
+    if (numObjects + 1 > MAX_OBJECTS) {
+        fprintf(stderr, "Too many objects to add\n");
+        return;
+    }
+    memcpy(&objects[numObjects++], obj, sizeof(geObject));
+}
+
+void addObjects(geObject* obj, size_t num) {
+    if (numObjects + num > MAX_OBJECTS) {
+        fprintf(stderr, "Too many objects to add\n");
+        return;
+    }
+    memcpy(&objects[numObjects], obj, sizeof(geObject) * num);
+    numObjects += num;
+}
 
 void initScene() {
     glUseProgram(programs[GE_PROGRAM_MAIN]);
@@ -279,11 +277,11 @@ void update() {
     kmMat4 rot;
     kmMat4RotationZ(&rot, 0.004f * PI / 180.0f);
     kmVec3MultiplyMat4(&lightPoint, &lightPoint, &rot);
-    objects[712].pos = lightPoint;
-    objects[712].rotation.z += 0.004f;
-    glUniform3fv(_U(pl), 1, (const GLfloat *) &lightPoint);
+    sun->pos = lightPoint;
+    sun->rotation.z += 0.004f;
+    glUniform3fv(_U(pl[0]), 1, (const GLfloat *) &lightPoint);
 
-    float skyDim = cosf(objects[712].rotation.z * PI / 180.0f);
+    float skyDim = cosf(sun->rotation.z * PI / 180.0f);
     if (skyDim <= 0.1f) {
         skyDim = 0.1f;
     }
@@ -296,63 +294,25 @@ void update() {
 
     kmMat4Identity(&rot);
     glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
-
-    for (int i = 0; i < (int) sizeof(objects) / sizeof(geObject); i++) {
-        geObject* obj = objects + i;
-        if (i < 256 && i != 16 || i == 714) {
-            obj->rotation.y += 0.01f;
-            obj->rotation.z += 0.02f;
-        }
-        if (i == 715) {
-            obj->rotation.y += 0.001f;
-        }
-    }
 }
 
 void drawScene() {
     glClearColor(1, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (int i = 0; i < (int) sizeof(objects) / sizeof(geObject); i++) {
+    glUniform4f(_U(lightAmbient), 0.3f, 0.3f, 0.3f, 1);
+
+    size_t i;
+    for (i = 0; i < numObjects; i++) {
         geObject* obj = objects + i;
-        if (i >= 256 && i < 712 || i == 717) {
-            continue;
-        }
 
-        if (i == 712 || i == 715) {// If it's the light cube or the sky
-            glUniform1i(_U(exemptFromView), true);
-            glUniform4f(_U(lightAmbient), 1, 1, 1, 1);
-        } else {
+        glUniform1i(_U(exemptFromView), obj->exemptFromView);
+        glUniform1i(_U(exemptFromViewProjection), obj->exemptFromViewProjection);
+        glUniform1f(_U(extraBrightness), obj->extraBrightness);
 
-            glUniform1i(_U(exemptFromView), false);
-            glUniform4f(_U(lightAmbient), 0.1f, 0.1f, 0.1f, 1);
-        }
-
-        if (i == 715) { // If it's the sky
-            glUniform1i(_U(useCubeMap), true);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, obj->texture);
-        } else {
-            glUniform1i(_U(useCubeMap), false);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, obj->texture);
-        }
-
-        if (i >= 512 && i <= 712 || i == 721) { // Set ambient light
-            glUniform4f(_U(lightAmbient), 1, 1, 1, 1);
-        } else {
-            glUniform4f(_U(lightAmbient), 0.3f, 0.3f, 0.3f, 1);
-        }
-
-        if (i >= 718 && i <= 720) { // If it's the GUI
-            if (SDL_GetRelativeMouseMode() == SDL_TRUE) {
-                continue;
-            }
-            glUniform1i(_U(exemptFromViewProjection), true);
-            continue;
-        } else {
-            glUniform1i(_U(exemptFromViewProjection), false);
-        }
+        glActiveTexture(obj->glTextureId);
+        glBindTexture(obj->glTextureType, obj->texture);
+        glUniform1i(_U(useCubeMap), obj->glTextureType == GL_TEXTURE_CUBE_MAP);
 
         kmMat4 rot, scale, translation;
         if (i == 721) {

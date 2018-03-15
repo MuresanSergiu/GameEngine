@@ -68,7 +68,7 @@ void initShapes() {
     shapes[GE_TERRAIN_NOISE] = createNoiseTerrain(40);
     shapes[GE_VERTEX_WORLD_DUMB] = createVoxelWorldDumb(8, 3);
     shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(8, 3);
-    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(8, 3);
+    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(50, 5);
 
     // Comparison of worlds
     printf("The dumb version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_DUMB].numVertices, shapes[GE_VERTEX_WORLD_DUMB].numIndices);
