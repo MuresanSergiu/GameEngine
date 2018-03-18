@@ -74,7 +74,7 @@ void initShapes() {
     shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(8, 3);
     printf("The culled version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_CULLED].numVertices, shapes[GE_VERTEX_WORLD_CULLED].numIndices);
     printf(" \n----- GREEDY INIT ----- \n");
-    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(20, 5);
+    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(100, 5);
     printf("The greedy version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_GREEDY].numVertices, shapes[GE_VERTEX_WORLD_GREEDY].numIndices);
 }
 
@@ -739,10 +739,16 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
             22, 21, 20
     };
 
-    size_t oX, oY, oZ, k;
+    size_t oX, oY, oZ, j, k;
     size_t arrayLength = 0;
-    int map[surfaceSize][surfaceSize][MAX_HEIGHT];
-    memset(map, 0, sizeof(int) * surfaceSize * surfaceSize * MAX_HEIGHT);
+
+    int*** map = calloc(sizeof(char*), surfaceSize);
+    for (j = 0; j < surfaceSize; j++) {
+        map[j] = calloc(sizeof(char*), surfaceSize);
+        for (k = 0; k < surfaceSize; k++) {
+            map[j][k] = calloc(sizeof(int), MAX_HEIGHT);
+        }
+    }
 
     for (oX = 0; oX < surfaceSize; oX++) {
         for (oZ = 0; oZ < surfaceSize; oZ++) {
@@ -801,15 +807,16 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     gettimeofday(&tStart, NULL);
 
     // </editor-fold>
+    geVertex* newVertices = malloc(numVertices * arrayLength * sizeof(geVertex));
+    GLuint* newIndices = malloc(numIndices * arrayLength * sizeof(GLuint));
+
+    geVertex* currentVertex = newVertices;
+    GLuint* currentIndex = newIndices;
+
     currentBlockIndex = 0;
-    size_t indicesJump = 0;
-    size_t verticesJump = 0;
     for (oX = 0; oX < surfaceSize; oX++) {
         for (oZ = 0; oZ < surfaceSize; oZ++) {
             for (oY = 0; oY < MAX_HEIGHT; oY++) {
-//                struct timeval stop, start;
-//                gettimeofday(&start, NULL);
-
                 if (map[oX][oZ][oY] == 0) {
                     continue;
                 }
@@ -826,21 +833,45 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
                 };
 
                 for (k = 0; k < 6; k++) {
-                    if (isAdjacent[k]) {
-                        removeFace(&shape, currentBlockIndex * numVertices - verticesJump + k * 4, currentBlockIndex * numIndices - indicesJump + k * 6, 1);
-                        verticesJump += 4;
-                        indicesJump += 6;
+                    if (!isAdjacent[k]) {
+                        memcpy(currentVertex, shape.vertices + (currentBlockIndex * numVertices + k * 4), sizeof(geVertex) * 4);
+                        memcpy(currentIndex, shape.indices + (currentBlockIndex * numIndices + k * 6), sizeof(GLuint) * 6);
+
+                        size_t p;
+                        size_t escape = (currentBlockIndex * numVertices + k * 4) - (currentVertex - newVertices);
+                        for (p = 0; p < 6; p++) {
+                            currentIndex[p] -= escape;
+                        }
+
+                        currentVertex += 4;
+                        currentIndex += 6;
                     }
                 }
                 currentBlockIndex++;
-
-//                gettimeofday(&stop, NULL);
-//                printf("took %lfms for one block\n", 1000000.0 / ((stop.tv_usec - start.tv_usec)));
             }
         }
     }
+
+    free(shape.vertices);
+    free(shape.indices);
+
+    shape.vertices = newVertices;
+    shape.indices = newIndices;
+
+    shape.numVertices = (currentVertex - newVertices);
+    shape.numIndices = (currentIndex - newIndices);
+
     realloc(shape.vertices, shape.numVertices * sizeof(geVertex));
     realloc(shape.indices, shape.numIndices * sizeof(GLuint));
+
+
+    for (j = 0; j < surfaceSize; j++) {
+        for (k = 0; k < surfaceSize; k++) {
+            free(map[j][k]);
+        }
+        free(map[j]);
+    }
+    free(map);
 
     gettimeofday(&tEnd, NULL);
     printf("Time for culling voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
