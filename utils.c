@@ -7,6 +7,7 @@
 #include <GL/glew.h>
 #include <stdbool.h>
 #include <math.h>
+#include <_timeval.h>
 #include "utils.h"
 
 #define GE_MAX_LINES 4096
@@ -62,4 +63,8 @@ void printFace(geVertex* v) {
 
 void printVec3(kmVec3* v) {
     printf("( %f, %f, %f )", v->x, v->y, v->z);
+}
+
+double timeDiff(struct timeval t1, struct timeval t2) {
+    return (t1.tv_sec - t2.tv_sec) * 1000.0 + (t1.tv_usec - t2.tv_usec) / 1000.0;
 }

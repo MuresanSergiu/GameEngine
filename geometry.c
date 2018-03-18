@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <mem.h>
 #include <stdio.h>
+#include <sys/time.h>
 #include "geometry.h"
 #include "utils.h"
 #include "simplex_noise.h"
@@ -66,13 +67,14 @@ void initShapes() {
     shapes[GE_TERRAIN_TRIG] = createTrigTerrain(200);
     shapes[GE_NORMALS] = createLineNormals(shapes + GE_TERRAIN_TRIG);
     shapes[GE_TERRAIN_NOISE] = createNoiseTerrain(40);
+    printf(" \n----- DUMB INIT ----- \n");
     shapes[GE_VERTEX_WORLD_DUMB] = createVoxelWorldDumb(8, 3);
-    shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(8, 3);
-    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(50, 5);
-
-    // Comparison of worlds
     printf("The dumb version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_DUMB].numVertices, shapes[GE_VERTEX_WORLD_DUMB].numIndices);
+    printf(" \n----- CULLED INIT ----- \n");
+    shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(8, 3);
     printf("The culled version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_CULLED].numVertices, shapes[GE_VERTEX_WORLD_CULLED].numIndices);
+    printf(" \n----- GREEDY INIT ----- \n");
+    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(20, 5);
     printf("The greedy version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_GREEDY].numVertices, shapes[GE_VERTEX_WORLD_GREEDY].numIndices);
 }
 
@@ -679,6 +681,9 @@ geShape createVoxelWorldDumb(size_t surfaceSize, size_t height) {
 }
 
 geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
+    struct timeval tStart, tEnd;
+    gettimeofday(&tStart, NULL);
+
     // <editor-fold> INIT STAGE
     geVertex vertices[] = {
             // FRONT
@@ -791,6 +796,9 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
             }
         }
     }
+    gettimeofday(&tEnd, NULL);
+    printf("Time for initializing voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
+    gettimeofday(&tStart, NULL);
 
     // </editor-fold>
     currentBlockIndex = 0;
@@ -799,6 +807,9 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     for (oX = 0; oX < surfaceSize; oX++) {
         for (oZ = 0; oZ < surfaceSize; oZ++) {
             for (oY = 0; oY < MAX_HEIGHT; oY++) {
+//                struct timeval stop, start;
+//                gettimeofday(&start, NULL);
+
                 if (map[oX][oZ][oY] == 0) {
                     continue;
                 }
@@ -815,26 +826,33 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
                 };
 
                 for (k = 0; k < 6; k++) {
-                    if ((k != 12) && isAdjacent[k]) {
+                    if (isAdjacent[k]) {
                         removeFace(&shape, currentBlockIndex * numVertices - verticesJump + k * 4, currentBlockIndex * numIndices - indicesJump + k * 6, 1);
                         verticesJump += 4;
                         indicesJump += 6;
                     }
                 }
                 currentBlockIndex++;
+
+//                gettimeofday(&stop, NULL);
+//                printf("took %lfms for one block\n", 1000000.0 / ((stop.tv_usec - start.tv_usec)));
             }
         }
     }
-
     realloc(shape.vertices, shape.numVertices * sizeof(geVertex));
     realloc(shape.indices, shape.numIndices * sizeof(GLuint));
+
+    gettimeofday(&tEnd, NULL);
+    printf("Time for culling voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
 
     return shape;
 }
 
 geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
+    struct timeval tStart, tEnd;
     size_t l, k;
     geShape shape = createVoxelWorldWithCulling(surfaceSize, height);
+    gettimeofday(&tStart, NULL);
 
     for (k = 0; k < shape.numVertices; k += 4) {
         geVertex* kFace = shape.vertices + k;
@@ -859,18 +877,18 @@ geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
 
             if (count == 2 && memcmp(&kFace[0].normal, &lFace[0].normal, sizeof(kmVec3)) == 0) {
 
-                printf("Found same indices with same orientation here: %llu with %llu and %llu with %llu\n", sameIndices[0], sameIndices[1], sameIndices[2], sameIndices[3]);
-                printf("And their positions are \n\t");
-                printVec3(&kFace[sameIndices[0]].pos);
-                printf("\n\t");
-                printVec3(&lFace[sameIndices[1]].pos);
-                printf("\n\t");
-                printVec3(&kFace[sameIndices[2]].pos);
-                printf("\n\t");
-                printVec3(&lFace[sameIndices[3]].pos);
-                printf("\n");
-                printFace(kFace);
-                printFace(lFace);
+//                printf("Found same indices with same orientation here: %llu with %llu and %llu with %llu\n", sameIndices[0], sameIndices[1], sameIndices[2], sameIndices[3]);
+//                printf("And their positions are \n\t");
+//                printVec3(&kFace[sameIndices[0]].pos);
+//                printf("\n\t");
+//                printVec3(&lFace[sameIndices[1]].pos);
+//                printf("\n\t");
+//                printVec3(&kFace[sameIndices[2]].pos);
+//                printf("\n\t");
+//                printVec3(&lFace[sameIndices[3]].pos);
+//                printf("\n");
+//                printFace(kFace);
+//                printFace(lFace);
 
                 memcpy(&kFace[sameIndices[0]].pos, &lFace[sameIndices[0]].pos, sizeof(kmVec3));
                 memcpy(&kFace[sameIndices[2]].pos, &lFace[sameIndices[2]].pos, sizeof(kmVec3));
@@ -887,7 +905,7 @@ geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
                 float texCoordDiffX = fabsf(kFaceOppositeSideVertex->texCoords.x - kFace[minVertex].texCoords.x);
                 float texCoordDiffY = fabsf(kFaceOppositeSideVertex->texCoords.y - kFace[minVertex].texCoords.y);
 
-                printf("Got texcoord differences of x: %f and y: %f\n", texCoordDiffX, texCoordDiffY);
+//                printf("Got texcoord differences of x: %f and y: %f\n", texCoordDiffX, texCoordDiffY);
                 if (texCoordDiffX != 0) {
                     kFace[sameIndices[0]].texCoords.x += 1;
                     kFace[sameIndices[2]].texCoords.x += 1;
@@ -905,6 +923,8 @@ geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
 
         }
     }
+    gettimeofday(&tEnd, NULL);
+    printf("Time for greedy on voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
 
     return shape;
 }

@@ -81,9 +81,9 @@ void initObjects() {
 //    vertexWorldDumb->shape = shapes + GE_VERTEX_WORLD_DUMB;
 
     vertexWorldGreedy = initObject();
-//    vertexWorldGreedy->pos.x = -12;
-//    vertexWorldGreedy->pos.y = 1;
-//    vertexWorldGreedy->pos.z = -10;
+    vertexWorldGreedy->pos.x = -12;
+    vertexWorldGreedy->pos.y = -10;
+    vertexWorldGreedy->pos.z = -10;
 //    vertexWorldGreedy->rotation.y = 60;
     vertexWorldGreedy->texture = tex[12];
     vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_GREEDY;

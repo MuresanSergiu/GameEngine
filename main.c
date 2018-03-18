@@ -14,7 +14,7 @@
 SDL_Window* window = NULL;
 SDL_GLContext* context = NULL;
 
-const int SCREEN_HEIGHT = 1080, SCREEN_WIDTH = 1920;
+const int SCREEN_HEIGHT = 900, SCREEN_WIDTH = 1600;
 
 //void DebugCallbackARB(GLenum source​, GLenum type​, GLuint id​, GLenum severity​, GLsizei length​, const GLchar* message​, const GLvoid* userParam​) {
 //
@@ -53,7 +53,8 @@ void initSDL() {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
-    window = SDL_CreateWindow("Hi", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+//    window = SDL_CreateWindow("Hi", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("Hi", 2560 - SCREEN_WIDTH, 30, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
     context = SDL_GL_CreateContext(window);
 
     SDL_GL_SetSwapInterval(1);
@@ -65,7 +66,7 @@ bool mousemap[255];
 float debugSpecularPower = 20;
 
 void updateKeyHandles() {
-    float dist = 0.1f;
+    float dist = 0.5f;
     if (keymap[SDL_SCANCODE_LEFT] || keymap[SDL_SCANCODE_A]) {
         kmVec3 left;
         kmVec3Cross(&left, &camera.direction, &camera.up);

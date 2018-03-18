@@ -14,5 +14,6 @@
 char** readFile(char* path);
 void printFace(geVertex* v);
 void printVec3(kmVec3* v);
+double timeDiff(struct timeval t1, struct timeval t2);
 
 #endif //GAMEENGINE_UTILS_H
