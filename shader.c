@@ -40,9 +40,27 @@ void initShader(SHADER shaderID, const char* file) {
     glShaderSource(fragmentShaders[shaderID], 1, (const GLchar *const *) fragSrc, fragLength);
     glCompileShader(fragmentShaders[shaderID]);
 
+    GLuint geometryShaderID = 0;
+    if (shaderID == GE_PROGRAM_MAIN) {
+        char geometryPath[512];
+
+        sprintf(geometryPath, "../shader/%s.geom", file);
+
+        char** geomSrc = readFile(geometryPath);
+        GLint* geomLength = calloc(1, sizeof(size_t));
+        *geomLength = (GLint) strlen(geomSrc[0]) + 1;
+
+        geometryShaderID = glCreateShader(GL_GEOMETRY_SHADER);
+        glShaderSource(geometryShaderID, 1, (const GLchar* const*) geomSrc, geomLength);
+        glCompileShader(geometryShaderID);
+    }
+
     programs[shaderID] = glCreateProgram();
     glAttachShader(programs[shaderID], vertexShaders[shaderID]);
     glAttachShader(programs[shaderID], fragmentShaders[shaderID]);
+    if (geometryShaderID != 0) {
+        glAttachShader(programs[shaderID], geometryShaderID);
+    }
     glLinkProgram(programs[shaderID]);
     printf("The ID of program %s is %u\n", file, programs[shaderID]);
 
