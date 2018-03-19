@@ -15,5 +15,5 @@ char** readFile(char* path);
 void printFace(geVertex* v);
 void printVec3(kmVec3* v);
 double timeDiff(struct timeval t1, struct timeval t2);
-
+float perlinNoise(unsigned long long x, unsigned long long y, int octaves, float roughness, float scale);
 #endif //GAMEENGINE_UTILS_H

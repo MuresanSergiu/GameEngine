@@ -752,11 +752,14 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
 
     for (oX = 0; oX < surfaceSize; oX++) {
         for (oZ = 0; oZ < surfaceSize; oZ++) {
-            int noise = (int) floorf(sdnoise2(oX, oZ, NULL, NULL) * 2.0f);
-            for (oY = 0; oY < height + noise; oY++) {
+            int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * 32 + height);
+//            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
+//            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
+//            printf("Got noise %f\n", perlinNoise(oX, oZ, 16));
+            for (oY = 0; oY < noise; oY++) {
                 map[oX][oZ][oY] = 1;
             }
-            arrayLength += (size_t) (height + noise);
+            arrayLength += (size_t) (noise);
         }
     }
     printf("Array length for culled is %llu\n", arrayLength);
@@ -889,7 +892,7 @@ geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
         geVertex* kFace = shape.vertices + k;
         for (l = 0; l < shape.numVertices; l += 4) {
             geVertex* lFace = shape.vertices + l;
-            if (k == l) {
+            if (k == l || memcmp(&kFace[0].normal, &lFace[0].normal, sizeof(kmVec3)) != 0) {
                 continue;
             }
             size_t i, j, count = 0;
@@ -906,7 +909,7 @@ geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
                 }
             }
 
-            if (count == 2 && memcmp(&kFace[0].normal, &lFace[0].normal, sizeof(kmVec3)) == 0) {
+            if (count == 2) {
 
 //                printf("Found same indices with same orientation here: %llu with %llu and %llu with %llu\n", sameIndices[0], sameIndices[1], sameIndices[2], sameIndices[3]);
 //                printf("And their positions are \n\t");
@@ -921,6 +924,7 @@ geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
 //                printFace(kFace);
 //                printFace(lFace);
 
+                // Map same indices from lFace to kFace to extend the face
                 memcpy(&kFace[sameIndices[0]].pos, &lFace[sameIndices[0]].pos, sizeof(kmVec3));
                 memcpy(&kFace[sameIndices[2]].pos, &lFace[sameIndices[2]].pos, sizeof(kmVec3));
 
