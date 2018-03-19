@@ -19,6 +19,7 @@ typedef enum {
 
 GLuint vertexShaders[10];
 GLuint fragmentShaders[10];
+GLuint geometryShaders[10];
 GLuint programs[10];
 
 void initAllShaders();
