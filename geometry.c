@@ -74,7 +74,7 @@ void initShapes() {
     shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(8, 3);
     printf("The culled version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_CULLED].numVertices, shapes[GE_VERTEX_WORLD_CULLED].numIndices);
     printf(" \n----- GREEDY INIT ----- \n");
-    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(100, 5);
+    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(10, 5);
     printf("The greedy version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_GREEDY].numVertices, shapes[GE_VERTEX_WORLD_GREEDY].numIndices);
 }
 

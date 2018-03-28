@@ -64,6 +64,7 @@ bool keymap[SDL_NUM_SCANCODES];
 bool mousemap[255];
 
 float debugSpecularPower = 20;
+bool showNormals = false;
 
 void updateKeyHandles() {
     float dist = 0.5f;
@@ -94,8 +95,19 @@ void updateKeyHandles() {
     } else if (keymap[SDL_SCANCODE_2]) {
         debugSpecularPower -= 0.5;
         glUniform1f(_U(specularPower), debugSpecularPower);
-    } else
-        return;
+    } else if (keymap[SDL_SCANCODE_F9]) {
+        GLuint aux = programs[GE_PROGRAM_MAIN];
+        programs[GE_PROGRAM_MAIN] = programs[GE_PROGRAM_WIREFRAME];
+        programs[GE_PROGRAM_WIREFRAME] = aux;
+    } else if (keymap[SDL_SCANCODE_F10]) {
+        showNormals = !showNormals;
+        GLint programID;
+        glGetIntegerv(GL_CURRENT_PROGRAM, &programID);
+        glUseProgram(programs[GE_PROGRAM_MAIN]);
+        printf("showNormals: %u %u\n", _U(showNormals), showNormals);
+        glUniform1i(_U(showNormals), showNormals);
+        glUseProgram(programID);
+    }
 }
 
 void updateMouseHandles(int x, int y) {

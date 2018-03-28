@@ -22,23 +22,23 @@ layout (location = 6) uniform mat4 shadowScaleBias;
 layout (location = 10) uniform bool exemptFromView;
 layout (location = 12) uniform bool exemptFromViewProjection;
 
-out vec3 FragNormal;
-out vec3 FragTexCoords;
-out vec3 FragPos;
-out vec3 FragVertexPos;
-out vec3 FragShadowPos;
+out vec3 GeomNormal;
+out vec3 GeomTexCoords;
+out vec3 GeomPos;
+out vec3 GeomVertexPos;
+out vec3 GeomShadowPos;
 
 void main(void) {
     vec3 biasedTexCoords = vec3(scaleBias * vec4(texCoords, 1.0));
-    FragTexCoords = biasedTexCoords;
-    FragVertexPos = position;
-    FragShadowPos = vec3(shadowScaleBias * shadowProjection * shadowView * model * vec4(position, 1.0f));
+    GeomTexCoords = biasedTexCoords;
+    GeomVertexPos = position;
+    GeomShadowPos = vec3(shadowScaleBias * shadowProjection * shadowView * model * vec4(position, 1.0f));
 
     // vec4(v, 0) means turning on affine transformations
     // This is a very simple way of cutting off the translation part from the normal
     // This doesn't account for non-uniform scaling (ex: scaling by (1.5, 3, 1))
-    FragNormal = normalize(mat3(model) * normal);
-    FragPos = vec3(model * vec4(position, 1.0f));
+    GeomNormal = normalize(mat3(model) * normal);
+    GeomPos = vec3(model * vec4(position, 1.0f));
     // ORDER MATTERS LOL
     if (exemptFromViewProjection) {
         gl_Position = model * vec4(position, 1.0f);

@@ -88,6 +88,12 @@ void initObjects() {
     vertexWorldGreedy->texture = tex[12];
     vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_GREEDY;
 
+    geObject* cylinder = initObject();
+    cylinder->pos.y = 50;
+    cylinder->shape = shapes + GE_TERRAIN_NOISE;
+    cylinder->texture = tex[2];
+    cylinder->size.x = cylinder->size.y = cylinder->size.z = 100;
+
     // <editor-fold> UNUSED USEFUL OBJECTS
 //    for (i = 512; i < 612; i++) {
 //        objects[i].shape = shapes + GE_LINE;

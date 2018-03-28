@@ -37,6 +37,7 @@ char** readFile(char* path) {
     for (j = 0; j < i; j++) {
         result[j] = resultTemp[j];
     }
+    fclose(fp);
     return result;
 }
 

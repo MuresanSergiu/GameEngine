@@ -30,7 +30,7 @@ void initShader(SHADER shaderID, const char* file) {
 
     sprintf(pathVertex, "../shader/%s.vert", file);
     sprintf(pathFragment, "../shader/%s.frag", file);
-    if (shaderID == GE_PROGRAM_MAIN) {
+    if (shaderID == GE_PROGRAM_WIREFRAME) {
         sprintf(pathGeometry, "../shader/%s.geom", file);
     }
 
@@ -43,7 +43,7 @@ void initShader(SHADER shaderID, const char* file) {
     lengthFragment = calloc(1, sizeof(size_t));
     *lengthFragment = (GLint) strlen(sourceFragment[0]) + 1;
 
-    if (shaderID == GE_PROGRAM_MAIN) {
+    if (shaderID == GE_PROGRAM_WIREFRAME) {
         sourceGeometry = readFile(pathGeometry);
         lengthGeometry = calloc(1, sizeof(size_t));
         *lengthGeometry = (GLint) strlen(sourceGeometry[0]) + 1;
@@ -58,7 +58,7 @@ void initShader(SHADER shaderID, const char* file) {
     glShaderSource(fragmentShaders[shaderID], 1, (const GLchar *const *) sourceFragment, lengthFragment);
     glCompileShader(fragmentShaders[shaderID]);
 
-    if (shaderID == GE_PROGRAM_MAIN) {
+    if (shaderID == GE_PROGRAM_WIREFRAME) {
         geometryShaders[shaderID] = glCreateShader(GL_GEOMETRY_SHADER);
         glShaderSource(geometryShaders[shaderID], 1, (const GLchar* const*) sourceGeometry, lengthGeometry);
         glCompileShader(geometryShaders[shaderID]);
@@ -67,7 +67,7 @@ void initShader(SHADER shaderID, const char* file) {
     programs[shaderID] = glCreateProgram();
     glAttachShader(programs[shaderID], vertexShaders[shaderID]);
     glAttachShader(programs[shaderID], fragmentShaders[shaderID]);
-    if (shaderID == GE_PROGRAM_MAIN) {
+    if (shaderID == GE_PROGRAM_WIREFRAME) {
         glAttachShader(programs[shaderID], geometryShaders[shaderID]);
     }
     glLinkProgram(programs[shaderID]);
@@ -94,14 +94,15 @@ void initAllShaders() {
     initShader(GE_PROGRAM_TEXTURE, "simpleTexture");
     initShader(GE_PROGRAM_SHADOW, "shadow");
     initShader(GE_PROGRAM_GUI, "gui");
+    initShader(GE_PROGRAM_WIREFRAME, "wireframe");
 }
 
 GLint geGetUniformLocationWithLog(const char* name) {
     GLuint programID;
     glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*) &programID);
     GLint uniformId = glGetUniformLocation(programID, name);
-    if (uniformId == -1) {
-//        fprintf(stderr, "Failed to find uniform with name %s in program with ID %u\n", name, programID);
+    if (uniformId == -1 && strcmp(name, "showNormals") == 0) {
+        fprintf(stderr, "Failed to find uniform with name %s in program with ID %u\n", name, programID);
     }
     return uniformId;
 }
