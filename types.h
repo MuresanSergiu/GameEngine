@@ -53,5 +53,13 @@ typedef struct geCamera {
     float aspectRatio;
 } geCamera;
 
+typedef struct gePlane {
+    geVertex* vertices;
+    GLuint* indices;
+
+    unsigned long long numVertices;
+    unsigned long long numIndices;
+
+} gePlane;
 
 #endif //GAMEENGINE_TYPES_H
