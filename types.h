@@ -60,6 +60,7 @@ typedef struct gePlane {
     unsigned long long numVertices;
     unsigned long long numIndices;
 
+    unsigned long long size[2];
 } gePlane;
 
 #endif //GAMEENGINE_TYPES_H

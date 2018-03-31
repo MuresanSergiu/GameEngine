@@ -955,19 +955,65 @@ void addOrdered(geVertex* vertices, GLuint* indices, gePlane** planes, unsigned 
     destination->numIndices += 6;
 }
 
-void compressPlaneWithGreedy(gePlane* plane) {
+gePlane compressPlaneWithGreedy(gePlane* plane) {
+    gePlane res = {
+            .vertices = calloc(plane->numVertices, sizeof(geVertex)),
+            .indices = calloc(plane->numIndices, sizeof(GLuint)),
+            .numVertices = 0,
+            .numIndices = 0
+    };
     size_t i;
-    size_t hashed[plane->numVertices / 4] = { 0 };
+    size_t* hashed = calloc(plane->numVertices / 4, sizeof(size_t));
     if (plane->vertices[0].normal.z == 1) { // front
         for (i = 0; i < plane->numVertices / 4 - 1; i++) {
-            geVertex* v1 = plane->vertices + i * 4;
-            geVertex* v2 = plane->vertices + (i + 1) * 4;
-            while(hashed[i + 1] == 0 && v1->pos.y == v2->pos.y && v1->pos.x == v2->pos.x + 1) {
-                // Merging faces
+            GLuint* indices = plane->indices + i * 6;
+            geVertex* v = plane->vertices + i * 4;
+
+            // Expand as much as possible on x
+            geVertex* v1 = v;
+            geVertex* v2 = v;
+            while(hashed[i + 1] == 0 && v2->pos.y == (v2 + 4)->pos.y && v2->pos.x == (v2 + 4)->pos.x - 1) {
+                v2 += 4;
+                i++;
+            }
+
+            // Expand as much as possible on y as well
+            geVertex* v3 = v1;
+            geVertex* v4 = v2;
+
+
+            while(hashed[i + 1] == 0 && v2->pos.y == (v2 + 4)->pos.y && v2->pos.x == (v2 + 4)->pos.x - 1) {
 
             }
+
+
+                memcpy(res.vertices + res.numVertices, v1, sizeof(geVertex));
+            res.numVertices++;
+            memcpy(res.vertices + res.numVertices, v2 + 1, 2 * sizeof(geVertex));
+            res.numVertices += 2;
+            memcpy(res.vertices + res.numVertices, v1 + 3, sizeof(geVertex));
+            res.numVertices++;
+
+            memcpy(res.indices + res.numIndices, indices, sizeof(GLuint) * 6);
+            res.numIndices += 6;
         }
+
+
     }
+    free(plane->vertices);
+    free(plane->indices);
+
+    realloc(res.vertices, res.numVertices * sizeof(geVertex));
+    realloc(res.indices, res.numIndices * sizeof(GLuint));
+
+    plane->vertices = res.vertices;
+    plane->indices = res.indices;
+    plane->numVertices = res.numVertices;
+    plane->numIndices = res.numIndices;
+
+    free(hashed);
+
+    return res;
 }
 
 geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
