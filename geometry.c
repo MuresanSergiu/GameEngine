@@ -74,7 +74,7 @@ void initShapes() {
     shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(8, 3);
     printf("The culled version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_CULLED].numVertices, shapes[GE_VERTEX_WORLD_CULLED].numIndices);
     printf(" \n----- GREEDY INIT ----- \n");
-    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(10, 5);
+    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(50, 5);
     printf("The greedy version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_GREEDY].numVertices, shapes[GE_VERTEX_WORLD_GREEDY].numIndices);
 }
 
@@ -958,8 +958,8 @@ void addFaceInOrderedPlane(geVertex* vertices, GLuint* indices, gePlane* planes,
     // Create it if it doesn't exist
     if (destination == NULL) {
         destination = planes + *numPlanes;
-        destination->vertices = calloc(2048 * 4, sizeof(geVertex));
-        destination->indices = calloc(2048 * 6, sizeof(GLuint));
+        destination->vertices = calloc(8192 * 4, sizeof(geVertex));
+        destination->indices = calloc(8192 * 6, sizeof(GLuint));
         (*numPlanes)++;
     }
 
@@ -1021,7 +1021,7 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
         }
 
         // Fix textures after expanding
-        kmVec3Scale(&temp, &diffSecondOrder, ((v2 - v1) / 4) + 1);
+        kmVec3Scale(&temp, &diffSecondOrder, ((v2 - v1) / 4));
         kmVec3Add(&(v2 + 1)->texCoords, &(v2 + 1)->texCoords, &temp);
         kmVec3Add(&(v2 + 2)->texCoords, &(v2 + 2)->texCoords, &temp);
 
@@ -1033,7 +1033,7 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
         while(j < plane->numVertices) {
             // Find next v3 based on the last v4
             v = v4;
-            while (j < plane->numVertices / 4 && (firstOrder(v3) == firstOrder(v) || firstOrder(v3) == firstOrder(v) - 1 && secondOrder(v3) > secondOrder(v))) {
+            while (j < plane->numVertices / 4 - 1 && (firstOrder(v3) == firstOrder(v) || firstOrder(v3) == firstOrder(v) - 1 && secondOrder(v3) > secondOrder(v))) {
                 j++;
                 v += 4;
             }
@@ -1046,18 +1046,17 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
 
             // Retain new v3 inside u
             u = v;
+
             // And start searching for the new v4
-            while (firstOrder(v4) == firstOrder(v) - 1 && secondOrder(v4) > secondOrder(v)) {
+            while (j < plane->numVertices / 4 - 1 && firstOrder(v4) == firstOrder(v) - 1 && secondOrder(v4) > secondOrder(v)) {
                 // The area between the new v3 and new v4 needs to be filled with non-hashed faces
                 // Otherwise, there's no new v4
-                if (hashed[j] != 0 || v != u && secondOrder(v) != secondOrder(v - 4) + 1) {
+                if (hashed[j] != 0 || secondOrder(v) != secondOrder(v + 4) - 1) {
                     fprintf(stdout, "Non-continuous faces\n");
                     break;
                 }
+
                 hashed[j++] = 1;
-                if (j >= plane->numVertices / 4) {
-                    break;
-                }
                 v += 4;
             }
 
@@ -1320,7 +1319,9 @@ geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height) {
     for (k = 0; k < 6; k++) {
         for (l = 0; l < numPlanes[k]; l++) {
             gePlane* plane = &planes[k][l];
-//            printf("%llu) %llu, %llu\n", k, plane->numIndices, plane->numVertices);
+//            fprintf(stderr, "Test\n");
+
+            fprintf(stderr, "%llu) %llu, %llu\n", k, plane->numIndices, plane->numVertices);
             for (j = 0; j < plane->numVertices / 4; j++) {
 //                if (k == 5) {
 //                    printFace(plane->vertices + j * 4);
