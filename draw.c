@@ -8,6 +8,7 @@
 #include "shader.h"
 #include "texture.h"
 #include "camera.h"
+#include "world.h"
 #include <math.h>
 #include <mem.h>
 #include <SDL2/SDL_video.h>
@@ -80,19 +81,26 @@ void initObjects() {
 //    vertexWorldDumb->texture = tex[12];
 //    vertexWorldDumb->shape = shapes + GE_VERTEX_WORLD_DUMB;
 
-    vertexWorldGreedy = initObject();
-    vertexWorldGreedy->pos.x = -12;
-    vertexWorldGreedy->pos.y = -10;
-    vertexWorldGreedy->pos.z = -10;
+//    vertexWorldGreedy = initObject();
+//    vertexWorldGreedy->pos.x = -12;
+//    vertexWorldGreedy->pos.y = -10;
+//    vertexWorldGreedy->pos.z = -10;
 //    vertexWorldGreedy->rotation.y = 60;
-    vertexWorldGreedy->texture = tex[12];
-    vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_GREEDY;
+//    vertexWorldGreedy->texture = tex[12];
+//    vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_GREEDY;
 
-    geObject* cylinder = initObject();
-    cylinder->pos.y = 50;
-    cylinder->shape = shapes + GE_TERRAIN_NOISE;
-    cylinder->texture = tex[2];
-    cylinder->size.x = cylinder->size.y = cylinder->size.z = 100;
+//    geObject* terrainNoise = initObject();
+//    terrainNoise->pos.y = 50;
+//    terrainNoise->shape = shapes + GE_TERRAIN_NOISE;
+//    terrainNoise->texture = tex[2];
+//    terrainNoise->size.x = terrainNoise->size.y = terrainNoise->size.z = 100;
+
+    initWorld(50, 128, 50);
+    bufferShape(&world.shape);
+
+    world.object = initObject();
+    world.object->shape = &world.shape;
+    world.object->texture = tex[12];
 
     // <editor-fold> UNUSED USEFUL OBJECTS
 //    for (i = 512; i < 612; i++) {
@@ -157,6 +165,38 @@ void initObjects() {
 
 /* EXTERNAL FUNCTIONS */
 
+void bufferShape(geShape* shape) {
+    glUseProgram(programs[GE_PROGRAM_MAIN]);
+    glGenVertexArrays(1, &shape->vao);
+
+    // Initialize shapes
+    shape->offsetBytesVertex = currentOffsetVertex;
+    shape->offsetBytesIndex = currentOffsetIndex;
+
+    currentOffsetVertex += shape->numVertices * sizeof(geVertex);
+    currentOffsetIndex += shape->numIndices * sizeof(GLuint);
+
+    // Buffer shape
+    glBindVertexArray(shape->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, shape->offsetBytesVertex, sizeof(geVertex) * shape->numVertices, shape->vertices);
+    if (shape->numIndices != 0) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, shape->offsetBytesIndex, sizeof(GLuint) * shape->numIndices, shape->indices);
+    }
+
+    glBindVertexArray(shape->vao);
+    // Position attribute
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void *) shape->offsetBytesVertex);
+    // Normal attribute
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void *) (shape->offsetBytesVertex + (sizeof(kmVec3))));
+    // Texture coords attribute
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void *) (shape->offsetBytesVertex + (sizeof(kmVec3) + sizeof(kmVec3))));
+}
+
 void addObject(geObject* obj) {
     if (numObjects + 1 > MAX_OBJECTS) {
         fprintf(stderr, "Too many objects to add\n");
@@ -196,6 +236,13 @@ void initScene() {
         }
         shapes[i].vao = vaos[i];
     }
+
+    currentOffsetVertex = shapes[INDEX_NUM - 1].offsetBytesVertex + shapes[INDEX_NUM - 1].numVertices * sizeof(geVertex);
+    currentOffsetIndex = shapes[INDEX_NUM - 1].offsetBytesIndex + shapes[INDEX_NUM - 1].numIndices * sizeof(GLuint);
+
+    // Add some extra space for dynamically added shapes
+    vertexBufferSize += 100000 * sizeof(geVertex);
+    indexBufferSize += 100000 * sizeof(GLuint);
 
     // Initialize buffers
     glBindVertexArray(vaos[0]);

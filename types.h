@@ -61,4 +61,14 @@ typedef struct gePlane {
     unsigned long long numIndices;
 } gePlane;
 
+typedef struct geWorld {
+    long long ***map;
+    size_t sizeX, sizeY, sizeZ;
+
+    // For rendering
+    geObject* object;
+    geShape shape;
+
+} geWorld;
+
 #endif //GAMEENGINE_TYPES_H
