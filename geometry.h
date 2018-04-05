@@ -21,7 +21,7 @@ typedef enum {
     GE_TERRAIN_NOISE,
     GE_VERTEX_WORLD_DUMB,
     GE_VERTEX_WORLD_CULLED,
-    GE_VERTEX_WORLD_GREEDY,
+    GE_3D_CROSSHAIR,
 
     // Number of shapes
     INDEX_NUM
@@ -40,6 +40,7 @@ geShape createNoiseTerrain(int tess);
 geShape createVoxelWorldDumb(size_t surfaceSize, size_t height);
 geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height);
 geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height);
+geShape create3DCrossHair();
 
 geShape shapes[INDEX_NUM];
 

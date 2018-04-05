@@ -21,6 +21,7 @@ geObject* shadowMap;
 geObject* vertexWorldDumb;
 geObject* vertexWorldCulled;
 geObject* vertexWorldGreedy;
+geObject* crosshair;
 
 /* INTERNAL FUNCTIONS */
 
@@ -94,6 +95,15 @@ void initObjects() {
 //    terrainNoise->shape = shapes + GE_TERRAIN_NOISE;
 //    terrainNoise->texture = tex[2];
 //    terrainNoise->size.x = terrainNoise->size.y = terrainNoise->size.z = 100;
+
+
+//    crosshair = initObject();
+//    crosshair->texture = tex[3];
+//    crosshair->shape = shapes + GE_3D_CROSSHAIR;
+//    crosshair->exemptFromView = true;
+//    crosshair->extraBrightness = 1.0f;
+//    crosshair->size.x = crosshair->size.y = crosshair->size.z = 0.2f;
+//    crosshair->pos.z = -1;
 
     initWorld(50, 128, 50);
     bufferShape(&world.shape);
@@ -347,6 +357,9 @@ void update() {
 
     kmMat4Identity(&rot);
     glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
+
+    // Update crosshair
+//    memcpy(&crosshair->rotation, &camera.direction, sizeof(kmVec3));
 }
 
 void drawScene() {
@@ -398,24 +411,30 @@ void drawObject(geObject* obj) {
     kmMat4Identity(&model);
     kmMat4Multiply(&model, &model, &translation);
     kmMat4Multiply(&model, &model, &scale);
-    kmMat4Multiply(&model, &model, &rotX);
-    kmMat4Multiply(&model, &model, &rotY);
-    kmMat4Multiply(&model, &model, &rotZ);
+    if (obj->shape == shapes + GE_3D_CROSSHAIR) {
+        kmMat4Multiply(&model, &model, &camera.rotY);
+        kmMat4Multiply(&model, &model, &camera.rotLeft);
+    } else {
+        kmMat4Multiply(&model, &model, &rotX);
+        kmMat4Multiply(&model, &model, &rotY);
+        kmMat4Multiply(&model, &model, &rotZ);
+    }
 
     glUniformMatrix4fv(_U(model), 1, GL_FALSE, model.mat);
 
     // DRAW THE OBJECT
+    GLenum primitive = obj->shape->numVertices == 2 || obj->shape == shapes + GE_3D_CROSSHAIR ? GL_LINES : GL_TRIANGLES;
     glBindVertexArray(obj->shape->vao);
     if (obj->shape->numIndices == 0) {
         glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
-        glDrawArrays(GL_TRIANGLES, (GLint) obj->shape->offsetBytesVertex / sizeof(geVertex), (GLsizei) (obj->shape->numVertices));
+        glDrawArrays(primitive, (GLint) obj->shape->offsetBytesVertex / sizeof(geVertex), (GLsizei) (obj->shape->numVertices));
     } else {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
-        GLenum shape = obj->shape->numVertices == 2 ? GL_LINES : GL_TRIANGLES;
+
 //        if (obj->shape == shapes + GE_VERTEX_WORLD_LESS_DUMB) {
 //            glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
 //        } else {
-            glDrawElements(shape, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
+            glDrawElements(primitive, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
 //        }
     }
     glBindVertexArray(0);

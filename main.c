@@ -136,6 +136,10 @@ int main(int argc, char** argv) {
     camera.up.y = 1;
     camera.pos.y = 0.5f;
     camera.aspectRatio = 16.0f / 9.0f;
+
+    kmMat4Identity(&camera.rotY);
+    kmMat4Identity(&camera.rotLeft);
+
     bool loop = true;
     while(loop) {
         struct timeval stop, start;
@@ -158,14 +162,17 @@ int main(int argc, char** argv) {
                 updateMouseHandles(e.button.x, e.button.y);
             } else if (e.type == SDL_MOUSEMOTION) {
                 if (SDL_GetRelativeMouseMode()) {
-                    kmMat4 rot;
-                    kmMat4RotationAxisAngle(&rot, &camera.up, (-e.motion.xrel * PI / 180.0f) / 16.0f);
-                    kmVec3MultiplyMat4(&camera.direction, &camera.direction, &rot);
+                    kmMat4 rotY, rotLeft;
+                    kmMat4RotationAxisAngle(&rotY, &camera.up, (-e.motion.xrel * PI / 180.0f) / 16.0f);
+                    kmVec3MultiplyMat4(&camera.direction, &camera.direction, &rotY);
 
                     kmVec3 left;
                     kmVec3Cross(&left, &camera.direction, &camera.up);
-                    kmMat4RotationAxisAngle(&rot, &left, (-e.motion.yrel * PI / 180.0f) / 16.0f);
-                    kmVec3MultiplyMat4(&camera.direction, &camera.direction, &rot);
+                    kmMat4RotationAxisAngle(&rotLeft, &left, (-e.motion.yrel * PI / 180.0f) / 16.0f);
+                    kmVec3MultiplyMat4(&camera.direction, &camera.direction, &rotLeft);
+
+                    kmMat4Multiply(&camera.rotY, &camera.rotY, &rotY);
+                    kmMat4Multiply(&camera.rotLeft, &camera.rotLeft, &rotLeft);
                 }
             }
         }
