@@ -530,14 +530,18 @@ void generateWorld(size_t heightOffsetIntesnsity) {
     generateMeshWithGreedy();
 }
 
-long long findInWorld(kmVec3* v) {
+kmVec3 findInWorld(kmVec3* v) {
+    kmVec3 result;
     size_t x, y, z;
-    x = (size_t) (v->x);// + 1.5f);
-    y = (size_t) (v->y);// + 0.5f);
-    z = (size_t) (v->z);// + 1.5f);
-
+    x = (size_t) floorf(v->x + 0.5f);
+    y = (size_t) floorf(v->y + 0.5f);
+    z = (size_t) floorf(v->z + 0.5f);
     if (0 <= x && x < world.sizeX && 0 <= y && y < world.sizeY && 0 <= z && z < world.sizeZ) {
-        return world.map[x][z][y];
+        result.x = x;
+        result.y = y;
+        result.z = z;
+    } else {
+        result.x = result.y = result.z = -1;
     }
-    return -1;
+    return result;
 }

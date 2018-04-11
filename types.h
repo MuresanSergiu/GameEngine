@@ -52,7 +52,6 @@ typedef struct geCamera {
     kmVec3 up;
 
     float aspectRatio;
-    kmMat4 rotY, rotLeft;
     kmVec3 rotation;
 } geCamera;
 

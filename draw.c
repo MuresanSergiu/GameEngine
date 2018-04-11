@@ -349,17 +349,9 @@ void initScene() {
 
 void update() {
     cameraUpdate(&camera);
-//    linePointer->rotation.x = 90;
-    kmVec3 raycastResult = raycast();
 
-
-//    printVec3(&raycastResult);
-//    printf("\n");
-//    memcpy(&highlight->pos, &raycastResult, sizeof(kmVec3));
-
-    highlight->pos.x = floorf(raycastResult.x);
-    highlight->pos.y = floorf(raycastResult.y);
-    highlight->pos.z = floorf(raycastResult.z);
+    kmVec3 raycastResult = cameraRaycast();
+    memcpy(&highlight->pos, &raycastResult, sizeof(kmVec3));
 
     // Update lights
     kmMat4 rot;
