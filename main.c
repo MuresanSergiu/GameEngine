@@ -117,9 +117,14 @@ void updateMouseHandles(int x, int y) {
             SDL_SetRelativeMouseMode(SDL_TRUE);
             glUniform3f(_U(_mouseOutColor), 0, 0, 0);
         } else {
-            memcpy(&linePointer->rotation, &camera.rotation, sizeof(kmVec3));
-            memcpy(&linePointer->pos, &camera.pos, sizeof(kmVec3));
+            kmVec3 raycast = cameraRaycast();
+            removeBlockFromWorld(&raycast);
+            bufferShape(&world.shape);
         }
+    }
+    if (mousemap[SDL_BUTTON_RIGHT]) {
+        memcpy(&linePointer->rotation, &camera.rotation, sizeof(kmVec3));
+        memcpy(&linePointer->pos, &camera.pos, sizeof(kmVec3));
     }
 }
 

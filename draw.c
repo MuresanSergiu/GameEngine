@@ -191,9 +191,23 @@ void initObjects() {
 
 void bufferShape(geShape* shape) {
     glUseProgram(programs[GE_PROGRAM_MAIN]);
+
+    // If shape already exists just update it
+    if (shape->offsetBytesVertex != 0 && shape->offsetBytesIndex != 0) {
+        // Buffer shape
+        glBindVertexArray(shape->vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
+        glBufferSubData(GL_ARRAY_BUFFER, shape->offsetBytesVertex, sizeof(geVertex) * shape->numVertices, shape->vertices);
+        if (shape->numIndices != 0) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, shape->offsetBytesIndex, sizeof(GLuint) * shape->numIndices, shape->indices);
+        }
+        return;
+    }
+
+    // Initialize shape
     glGenVertexArrays(1, &shape->vao);
 
-    // Initialize shapes
     shape->offsetBytesVertex = currentOffsetVertex;
     shape->offsetBytesIndex = currentOffsetIndex;
 
@@ -212,15 +226,14 @@ void bufferShape(geShape* shape) {
     glBindVertexArray(shape->vao);
     // Position attribute
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void *) shape->offsetBytesVertex);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void*) shape->offsetBytesVertex);
     // Normal attribute
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void *) (shape->offsetBytesVertex + (sizeof(kmVec3))));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void*) (shape->offsetBytesVertex + (sizeof(kmVec3))));
     // Texture coords attribute
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void *) (shape->offsetBytesVertex + (sizeof(kmVec3) + sizeof(kmVec3))));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void*) (shape->offsetBytesVertex + (sizeof(kmVec3) + sizeof(kmVec3))));
 }
-
 void addObject(geObject* obj) {
     if (numObjects + 1 > MAX_OBJECTS) {
         fprintf(stderr, "Too many objects to add\n");

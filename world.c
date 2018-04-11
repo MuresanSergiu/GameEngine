@@ -8,6 +8,8 @@
 
 #define MAX_HEIGHT 128
 
+size_t arrayLength = 0;
+
 /* INTERNAL FUNCTIONS */
 
 // Given a face gets the coordinate for the first parameter with which face ordering is done
@@ -505,7 +507,7 @@ void destroyWorld() {
 void generateWorld(size_t heightOffsetIntesnsity) {
     size_t numVertices = 24;
     size_t numIndices = 36;
-    size_t oX, oZ, oY, arrayLength = 0;
+    size_t oX, oZ, oY;
 
     for (oX = 0; oX < world.sizeX; oX++) {
         for (oZ = 0; oZ < world.sizeZ; oZ++) {
@@ -536,7 +538,7 @@ kmVec3 findInWorld(kmVec3* v) {
     x = (size_t) floorf(v->x + 0.5f);
     y = (size_t) floorf(v->y + 0.5f);
     z = (size_t) floorf(v->z + 0.5f);
-    if (0 <= x && x < world.sizeX && 0 <= y && y < world.sizeY && 0 <= z && z < world.sizeZ) {
+    if (0 <= x && x < world.sizeX && 0 <= y && y < world.sizeY && 0 <= z && z < world.sizeZ && world.map[x][z][y] != 0) {
         result.x = x;
         result.y = y;
         result.z = z;
@@ -544,4 +546,27 @@ kmVec3 findInWorld(kmVec3* v) {
         result.x = result.y = result.z = -1;
     }
     return result;
+}
+
+void removeBlockFromWorld(kmVec3* v) {
+    size_t x, y, z;
+    x = (size_t) v->x;
+    y = (size_t) v->y;
+    z = (size_t) v->z;
+
+    world.map[x][z][y] = 0;
+
+    arrayLength--;
+
+    size_t numVertices = 24;
+    size_t numIndices = 36;
+
+    world.shape.numVertices = numVertices * arrayLength;
+    world.shape.numIndices = numIndices * arrayLength;
+    world.shape.vertices = calloc(numVertices * arrayLength, sizeof(geVertex));
+    world.shape.indices = calloc(numIndices * arrayLength, sizeof(GLuint));
+
+    generateMeshWithGreedy();
+
+
 }
