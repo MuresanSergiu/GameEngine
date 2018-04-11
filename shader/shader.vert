@@ -19,8 +19,9 @@ layout (location = 4) uniform mat4 shadowView;
 layout (location = 5) uniform mat4 shadowProjection;
 layout (location = 6) uniform mat4 shadowScaleBias;
 
-layout (location = 10) uniform bool exemptFromView;
+layout (location = 10) uniform bool exemptFromViewTranslation;
 layout (location = 12) uniform bool exemptFromViewProjection;
+uniform bool exemptFromView;
 
 out vec3 FragNormal;
 out vec3 FragTexCoords;
@@ -43,6 +44,8 @@ void main(void) {
     if (exemptFromViewProjection) {
         gl_Position = model * vec4(position, 1.0f);
     } else if (exemptFromView) {
+        gl_Position = projection * model * vec4(position, 1.0f);
+    } else if (exemptFromViewTranslation) {
         // Same as normal vertex BUT keep ONLY rotation of view matrix (world->view)
         gl_Position = projection * mat4(mat3(view)) * model * vec4(position, 1.0f);
     } else {

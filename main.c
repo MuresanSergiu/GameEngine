@@ -10,6 +10,7 @@
 #include "camera.h"
 #include "framebuffer.h"
 #include "gui.h"
+#include "world.h"
 
 SDL_Window* window = NULL;
 SDL_GLContext* context = NULL;
@@ -115,6 +116,9 @@ void updateMouseHandles(int x, int y) {
         if (!SDL_GetRelativeMouseMode()) {
             SDL_SetRelativeMouseMode(SDL_TRUE);
             glUniform3f(_U(_mouseOutColor), 0, 0, 0);
+        } else {
+            memcpy(&linePointer->rotation, &camera.rotation, sizeof(kmVec3));
+            memcpy(&linePointer->pos, &camera.pos, sizeof(kmVec3));
         }
     }
 }
@@ -134,7 +138,7 @@ int main(int argc, char** argv) {
     memset(&camera, 0, sizeof(camera));
     camera.direction.z = -1;
     camera.up.y = 1;
-    camera.pos.y = 0.5f;
+    camera.pos.y = 0.1f;
     camera.aspectRatio = 16.0f / 9.0f;
 
     kmMat4Identity(&camera.rotY);
@@ -163,16 +167,29 @@ int main(int argc, char** argv) {
             } else if (e.type == SDL_MOUSEMOTION) {
                 if (SDL_GetRelativeMouseMode()) {
                     kmMat4 rotY, rotLeft;
-                    kmMat4RotationAxisAngle(&rotY, &camera.up, (-e.motion.xrel * PI / 180.0f) / 16.0f);
+                    camera.rotation.y += -e.motion.xrel / 16.0f;
+                    camera.rotation.x += -e.motion.yrel / 16.0f;
+
+                    if (camera.rotation.y > 360.0f) {
+                        camera.rotation.y -= 360.0f;
+                    }
+                    if (camera.rotation.x > 360.0f) {
+                        camera.rotation.x -= 360.0f;
+                    }
+
+                    kmMat4RotationAxisAngle(&rotY, &camera.up, -e.motion.xrel / 16.0f * PI / 180.0f);
                     kmVec3MultiplyMat4(&camera.direction, &camera.direction, &rotY);
 
                     kmVec3 left;
                     kmVec3Cross(&left, &camera.direction, &camera.up);
-                    kmMat4RotationAxisAngle(&rotLeft, &left, (-e.motion.yrel * PI / 180.0f) / 16.0f);
+                    kmMat4RotationAxisAngle(&rotLeft, &left, -e.motion.yrel / 16.0f * PI / 180.0f);
                     kmVec3MultiplyMat4(&camera.direction, &camera.direction, &rotLeft);
 
-                    kmMat4Multiply(&camera.rotY, &camera.rotY, &rotY);
-                    kmMat4Multiply(&camera.rotLeft, &camera.rotLeft, &rotLeft);
+//                    kmMat4Assign(&camera.rotY, &rotY);
+//                    kmMat4Assign(&camera.rotLeft, &rotLeft);
+
+//                    kmMat4Multiply(&camera.rotY, &camera.rotY, &rotY);
+//                    kmMat4Multiply(&camera.rotLeft, &camera.rotLeft, &rotLeft);
                 }
             }
         }
@@ -191,5 +208,6 @@ int main(int argc, char** argv) {
 //        printf("took %lf\n", 1000000.0 / ((stop.tv_usec - start.tv_usec)));
     }
     clearScene();
+    destroyWorld();
 }
 

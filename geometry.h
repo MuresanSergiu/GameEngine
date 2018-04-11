@@ -10,6 +10,7 @@
 
 typedef enum {
     GE_CUBE = 0,
+    GE_CUBE_BORDER,
     GE_CUBE_INVERTED,
     GE_SQUARE,
     GE_LINE,
@@ -21,6 +22,7 @@ typedef enum {
     GE_TERRAIN_NOISE,
     GE_VERTEX_WORLD_DUMB,
     GE_VERTEX_WORLD_CULLED,
+    GE_2D_CROSSHAIR,
     GE_3D_CROSSHAIR,
 
     // Number of shapes
@@ -29,6 +31,7 @@ typedef enum {
 
 void initShapes();
 geShape createCube(bool inverted);
+geShape createCubeBorder();
 geShape createSquare(bool withIndices);
 geShape createLine();
 geShape createCircle(int tess);
@@ -41,6 +44,8 @@ geShape createVoxelWorldDumb(size_t surfaceSize, size_t height);
 geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height);
 geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height);
 geShape create3DCrossHair();
+geShape create2DCrossHair();
+
 
 geShape shapes[INDEX_NUM];
 

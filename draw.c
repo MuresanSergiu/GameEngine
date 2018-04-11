@@ -22,6 +22,7 @@ geObject* vertexWorldDumb;
 geObject* vertexWorldCulled;
 geObject* vertexWorldGreedy;
 geObject* crosshair;
+geObject* highlight;
 
 /* INTERNAL FUNCTIONS */
 
@@ -33,6 +34,7 @@ geObject* initObject() {
     obj->size.x = obj->size.y = obj->size.z = 1;
     obj->rotation.x = obj->rotation.y = obj->rotation.z = 0;
     obj->exemptFromView = false;
+    obj->exemptFromViewTranslation = false;
     obj->exemptFromViewProjection = false;
     obj->glTextureId = GL_TEXTURE0;
     obj->glTextureType = GL_TEXTURE_2D;
@@ -49,7 +51,7 @@ void initObjects() {
     sun->texture = tex[4];
     sun->size.x = sun->size.y = sun->size.z = 30;
     sun->pos = lightPoint;
-    sun->exemptFromView = true;
+    sun->exemptFromViewTranslation = true;
     sun->extraBrightness = 1;
 //    objects[712].shape = shapes + GE_CUBE;
 //    objects[712].texture = tex[4];
@@ -63,7 +65,7 @@ void initObjects() {
     sky->pos.y = -10;
     sky->glTextureType = GL_TEXTURE_CUBE_MAP;
     sky->glTextureId = GL_TEXTURE1;
-    sky->exemptFromView = true;
+    sky->exemptFromViewTranslation = true;
     sky->extraBrightness = 1;
 
     shadowMap = initObject();
@@ -74,21 +76,27 @@ void initObjects() {
     shadowMap->pos.x = -2;
     shadowMap->pos.z = 5;
 
-//    vertexWorldDumb = initObject();
-//    vertexWorldDumb->pos.x = -3;
-//    vertexWorldDumb->pos.y = 1;
-//    vertexWorldDumb->pos.z = -4;
-//    vertexWorldDumb->rotation.y = 60;
-//    vertexWorldDumb->texture = tex[12];
-//    vertexWorldDumb->shape = shapes + GE_VERTEX_WORLD_DUMB;
+    highlight = initObject();
+    highlight->shape = shapes + GE_CUBE_BORDER;
+    highlight->size.x = highlight->size.y = highlight->size.z = 1.02f;
+    highlight->texture = tex[3];
+    highlight->extraBrightness = 1.0f;
 
-//    vertexWorldGreedy = initObject();
-//    vertexWorldGreedy->pos.x = -12;
-//    vertexWorldGreedy->pos.y = -10;
-//    vertexWorldGreedy->pos.z = -10;
-//    vertexWorldGreedy->rotation.y = 60;
-//    vertexWorldGreedy->texture = tex[12];
-//    vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_GREEDY;
+    vertexWorldDumb = initObject();
+    vertexWorldDumb->pos.x = -200;
+    vertexWorldDumb->pos.y = 0;
+    vertexWorldDumb->pos.z = 200;
+    vertexWorldDumb->rotation.y = 60;
+    vertexWorldDumb->texture = tex[12];
+    vertexWorldDumb->shape = shapes + GE_VERTEX_WORLD_DUMB;
+
+    vertexWorldGreedy = initObject();
+    vertexWorldGreedy->pos.x = -200;
+    vertexWorldGreedy->pos.y = 0;
+    vertexWorldGreedy->pos.z = 0;
+    vertexWorldGreedy->rotation.y = 60;
+    vertexWorldGreedy->texture = tex[12];
+    vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_CULLED;
 
 //    geObject* terrainNoise = initObject();
 //    terrainNoise->pos.y = 50;
@@ -97,13 +105,13 @@ void initObjects() {
 //    terrainNoise->size.x = terrainNoise->size.y = terrainNoise->size.z = 100;
 
 
-//    crosshair = initObject();
-//    crosshair->texture = tex[3];
-//    crosshair->shape = shapes + GE_3D_CROSSHAIR;
-//    crosshair->exemptFromView = true;
-//    crosshair->extraBrightness = 1.0f;
-//    crosshair->size.x = crosshair->size.y = crosshair->size.z = 0.2f;
-//    crosshair->pos.z = -1;
+    crosshair = initObject();
+    crosshair->texture = tex[3];
+    crosshair->shape = shapes + GE_2D_CROSSHAIR;
+    crosshair->exemptFromView = true;
+    crosshair->extraBrightness = 1.0f;
+    crosshair->size.x = crosshair->size.y = crosshair->size.z = 0.02f;
+    crosshair->pos.z = -1;
 
     initWorld(50, 128, 50);
     bufferShape(&world.shape);
@@ -111,6 +119,12 @@ void initObjects() {
     world.object = initObject();
     world.object->shape = &world.shape;
     world.object->texture = tex[12];
+
+    linePointer = initObject();
+    linePointer->shape = shapes + GE_LINE;
+    linePointer->size.x = linePointer->size.y = linePointer->size.z = 20;
+    linePointer->extraBrightness = 1.0f;
+    linePointer->texture = tex[1];
 
     // <editor-fold> UNUSED USEFUL OBJECTS
 //    for (i = 512; i < 612; i++) {
@@ -335,6 +349,17 @@ void initScene() {
 
 void update() {
     cameraUpdate(&camera);
+//    linePointer->rotation.x = 90;
+    kmVec3 raycastResult = raycast();
+
+
+//    printVec3(&raycastResult);
+//    printf("\n");
+//    memcpy(&highlight->pos, &raycastResult, sizeof(kmVec3));
+
+    highlight->pos.x = floorf(raycastResult.x);
+    highlight->pos.y = floorf(raycastResult.y);
+    highlight->pos.z = floorf(raycastResult.z);
 
     // Update lights
     kmMat4 rot;
@@ -373,6 +398,7 @@ void drawScene() {
         geObject* obj = objects + i;
 
         glUniform1i(_U(exemptFromView), obj->exemptFromView);
+        glUniform1i(_U(exemptFromViewTranslation), obj->exemptFromViewTranslation);
         glUniform1i(_U(exemptFromViewProjection), obj->exemptFromViewProjection);
         glUniform1f(_U(extraBrightness), obj->extraBrightness);
 
@@ -411,19 +437,27 @@ void drawObject(geObject* obj) {
     kmMat4Identity(&model);
     kmMat4Multiply(&model, &model, &translation);
     kmMat4Multiply(&model, &model, &scale);
-    if (obj->shape == shapes + GE_3D_CROSSHAIR) {
-        kmMat4Multiply(&model, &model, &camera.rotY);
-        kmMat4Multiply(&model, &model, &camera.rotLeft);
+
+    if (obj == linePointer) {
+        kmMat4Multiply(&model, &model, &rotY);
+        kmMat4Multiply(&model, &model, &rotX);
+        kmMat4Multiply(&model, &model, &rotZ);
     } else {
         kmMat4Multiply(&model, &model, &rotX);
         kmMat4Multiply(&model, &model, &rotY);
         kmMat4Multiply(&model, &model, &rotZ);
     }
+    if (obj->shape == shapes + GE_3D_CROSSHAIR) {
+//        kmMat4Multiply(&model, &model, &camera.rotY);
+//        kmMat4Multiply(&model, &model, &camera.rotLeft);
+    } else {
+
+    }
 
     glUniformMatrix4fv(_U(model), 1, GL_FALSE, model.mat);
 
     // DRAW THE OBJECT
-    GLenum primitive = obj->shape->numVertices == 2 || obj->shape == shapes + GE_3D_CROSSHAIR ? GL_LINES : GL_TRIANGLES;
+    GLenum primitive = obj->shape->numVertices == 2 || obj->shape == shapes + GE_2D_CROSSHAIR || obj->shape == shapes + GE_3D_CROSSHAIR || obj->shape == shapes + GE_CUBE_BORDER ? GL_LINES : GL_TRIANGLES;
     glBindVertexArray(obj->shape->vao);
     if (obj->shape->numIndices == 0) {
         glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);

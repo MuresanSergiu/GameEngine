@@ -488,7 +488,7 @@ void initWorld(size_t sizeX, size_t sizeY, size_t sizeZ) {
         }
     }
 
-    generateWorld(15);
+    generateWorld(32);
 }
 
 void destroyWorld() {
@@ -509,7 +509,7 @@ void generateWorld(size_t heightOffsetIntesnsity) {
 
     for (oX = 0; oX < world.sizeX; oX++) {
         for (oZ = 0; oZ < world.sizeZ; oZ++) {
-            int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * heightOffsetIntesnsity + world.sizeY / 16);
+            int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * heightOffsetIntesnsity + world.sizeY / 8);
 //            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
 //            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
 //            printf("Got noise %f\n", perlinNoise(oX, oZ, 16));
@@ -528,4 +528,16 @@ void generateWorld(size_t heightOffsetIntesnsity) {
     printf("Array length for WORLD is %llu\n", arrayLength);
 
     generateMeshWithGreedy();
+}
+
+long long findInWorld(kmVec3* v) {
+    size_t x, y, z;
+    x = (size_t) (v->x);// + 1.5f);
+    y = (size_t) (v->y);// + 0.5f);
+    z = (size_t) (v->z);// + 1.5f);
+
+    if (0 <= x && x < world.sizeX && 0 <= y && y < world.sizeY && 0 <= z && z < world.sizeZ) {
+        return world.map[x][z][y];
+    }
+    return -1;
 }

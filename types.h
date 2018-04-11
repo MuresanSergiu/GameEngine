@@ -37,6 +37,7 @@ typedef struct geObject {
     kmVec3 rotation;
 
     bool exemptFromView;
+    bool exemptFromViewTranslation;
     bool exemptFromViewProjection;
 
     GLushort glTextureId;
@@ -52,6 +53,7 @@ typedef struct geCamera {
 
     float aspectRatio;
     kmMat4 rotY, rotLeft;
+    kmVec3 rotation;
 } geCamera;
 
 typedef struct gePlane {

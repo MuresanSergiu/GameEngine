@@ -63,6 +63,7 @@ void removeFace(geShape* shape, size_t offsetVertex, size_t offsetIndex, size_t 
 void initShapes() {
     shapes[GE_CUBE] = createCube(false);
     shapes[GE_CUBE_INVERTED] = createCube(true);
+    shapes[GE_CUBE_BORDER] = createCubeBorder();
     shapes[GE_SQUARE] = createSquare(true);
     shapes[GE_LINE] = createLine();
     shapes[GE_CIRCLE] = createCircle(25);
@@ -72,15 +73,18 @@ void initShapes() {
     shapes[GE_NORMALS] = createLineNormals(shapes + GE_TERRAIN_TRIG);
     shapes[GE_TERRAIN_NOISE] = createNoiseTerrain(40);
     printf(" \n----- DUMB INIT ----- \n");
-    shapes[GE_VERTEX_WORLD_DUMB] = createVoxelWorldDumb(8, 3);
+    shapes[GE_VERTEX_WORLD_DUMB] = createVoxelWorldDumb(50, 32);
     printf("The dumb version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_DUMB].numVertices, shapes[GE_VERTEX_WORLD_DUMB].numIndices);
     printf(" \n----- CULLED INIT ----- \n");
-    shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(8, 3);
+    shapes[GE_VERTEX_WORLD_CULLED] = createVoxelWorldWithCulling(50, 32);
     printf("The culled version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_CULLED].numVertices, shapes[GE_VERTEX_WORLD_CULLED].numIndices);
     printf(" \n----- GREEDY INIT ----- \n");
 //    shapes[GE_VERTEX_WORLD_GREEDY] = createVoxelWorldWithGreedy(50, 5);
 //    printf("The greedy version draws: %llu vertices and %llu indices\n", shapes[GE_VERTEX_WORLD_GREEDY].numVertices, shapes[GE_VERTEX_WORLD_GREEDY].numIndices);
+    shapes[GE_2D_CROSSHAIR] = create2DCrossHair();
     shapes[GE_3D_CROSSHAIR] = create3DCrossHair();
+
+
 }
 
 geShape createCube(bool inverted) {
@@ -181,13 +185,61 @@ geShape createSquare(bool withIndices) {
     return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices), withIndices);
 }
 
-geShape createLine() {
+geShape createCubeBorder() {
     geVertex vertices[] = {
-            {{ x - size / 2, y, z }, { 0, 1.0f, 0 } , { 0, 0 }},
-            {{ x + size / 2, y, z }, { 0, 1.0f, 0 } , { 0, 1 }}
+            // FRONT
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 0}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 1}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 1}},
+            // BACK
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 0}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 0}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 1}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1}},
+            // LEFT
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1}},
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1}},
+            // RIGHT
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1}},
+            // TOP
+            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0}},
+            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0}},
+            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1}},
+            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1}},
+            // BOTTOM
+            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0}},
+            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0}},
+            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1}},
+            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1}},
     };
 
-    return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), NULL, 0, true);
+    GLuint indices[] = {
+            0, 1, 1, 2, 2, 3, 3, 0,
+            4, 5, 5, 6, 6, 7, 7, 4,
+            8, 9, 9, 10, 10, 11, 11, 8,
+            12, 13, 13, 14, 14, 15, 15, 12,
+            16, 17, 17, 18, 18, 19, 19, 16,
+            20, 21, 21, 22, 22, 23, 23, 20,
+    };
+
+    return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices), true);
+}
+
+geShape createLine() {
+    geVertex vertices[] = {
+            {{ x, y, z - size / 2}, { 0, 1.0f, 0 } , { 0, 0 }},
+            {{ x, y, z + size / 2}, { 0, 1.0f, 0 } , { 0, 1 }}
+    };
+
+    GLuint indices[] = { 0, 1 };
+
+    return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, 2, true);
 }
 
 geShape createCircle(int tess) {
@@ -617,16 +669,28 @@ geShape createVoxelWorldDumb(size_t surfaceSize, size_t height) {
     };
 
     size_t i, j, k;
+    size_t oX, oY, oZ;
     size_t heightMap[surfaceSize * surfaceSize];
     size_t arrayLength = 0;
 
-    for (i = 0; i < surfaceSize; i++) {
-        for (j = 0; j < surfaceSize; j++) {
-            int noise = (int) floorf(sdnoise2(i, j, NULL, NULL) * 2.0f);
-            heightMap[i * surfaceSize + j] = (size_t) (height + noise);
-            arrayLength += (size_t) (height + noise);
+    for (oX = 0; oX < surfaceSize; oX++) {
+        for (oZ = 0; oZ < surfaceSize; oZ++) {
+            int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * height + 16);
+//            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
+//            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
+//            printf("Got noise %f\n", perlinNoise(oX, oZ, 16));
+            heightMap[oX * surfaceSize + oZ] = (size_t) noise;
+            arrayLength += (size_t) (noise);
         }
     }
+
+//    for (i = 0; i < surfaceSize; i++) {
+//        for (j = 0; j < surfaceSize; j++) {
+//            int noise = (int) floorf(sdnoise2(i, j, NULL, NULL) * 2.0f);
+//            heightMap[i * surfaceSize + j] = (size_t) (height + noise);
+//            arrayLength += (size_t) (height + noise);
+//        }
+//    }
     printf("Array length for dumb is %llu\n", arrayLength);
 
     geShape shape;
@@ -742,7 +806,7 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
 
     for (oX = 0; oX < surfaceSize; oX++) {
         for (oZ = 0; oZ < surfaceSize; oZ++) {
-            int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * 32 + height);
+            int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * height + 16);
 //            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
 //            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
 //            printf("Got noise %f\n", perlinNoise(oX, oZ, 16));
@@ -870,6 +934,21 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     printf("Time for culling voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
 
     return shape;
+}
+
+geShape create2DCrossHair() {
+    geVertex vertices[] = {
+            {{ x - size / 2, 0, 1 }, { 0, 0, 1 }, { 0, 0 }},
+            {{ x + size / 2, 0, 1 }, { 0, 0, 1 }, { 1, 0 }},
+            {{ 0, y - size / 2, 1 }, { 0, 0, 1 }, { 0, 0 }},
+            {{ 0, y + size / 2, 1 }, { 0, 0, 1 }, { 0, 1 }}
+    };
+
+    GLuint indices[] = {
+            0, 1, 2, 3
+    };
+
+    return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, 4, true);
 }
 
 geShape create3DCrossHair() {

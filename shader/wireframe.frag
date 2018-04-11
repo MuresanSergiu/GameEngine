@@ -1,6 +1,6 @@
 #version 450 core
 
-layout (location = 10) uniform bool exemptFromView;
+layout (location = 10) uniform bool exemptFromViewTranslation;
 layout (location = 11) uniform bool useCubeMap;
 layout (location = 12) uniform bool exemptFromViewProjection;
 
@@ -71,7 +71,7 @@ void main(void) {
 
     if (exemptFromViewProjection) {
         outColor = vec4(vec3(texturedFragment), 1) + vec4(_mouseOutColor, 0);
-    } else if (exemptFromView) {
+    } else if (exemptFromViewTranslation) {
         if (useCubeMap) { // If it's the sky
             outColor = texturedFragment * skyDim + vec4(_mouseOutColor, 0);
         } else {

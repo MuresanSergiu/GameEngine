@@ -21,6 +21,7 @@ size_t currentOffsetVertex, currentOffsetIndex;
 
 size_t numObjects;
 geObject objects[MAX_OBJECTS];
+geObject* linePointer;
 
 void addObject(geObject* obj);
 void addObjects(geObject* obj, size_t num);
