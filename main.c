@@ -107,7 +107,7 @@ void updateKeyHandles() {
         glUseProgram(programs[GE_PROGRAM_MAIN]);
         printf("showNormals: %u %u\n", _U(showNormals), showNormals);
         glUniform1i(_U(showNormals), showNormals);
-        glUseProgram(programID);
+        glUseProgram((GLuint) programID);
     }
 }
 
@@ -118,8 +118,10 @@ void updateMouseHandles(int x, int y) {
             glUniform3f(_U(_mouseOutColor), 0, 0, 0);
         } else {
             kmVec3 raycast = cameraRaycast();
-            removeBlockFromWorld(&raycast);
-            bufferShape(&world.shape);
+            if (raycast.x != -1 && raycast.y != -1 && raycast.z != -1) {
+                removeBlockFromWorld(&raycast);
+                bufferShape(&world.shape);
+            }
         }
     }
     if (mousemap[SDL_BUTTON_RIGHT]) {
@@ -199,5 +201,7 @@ int main(int argc, char** argv) {
     }
     clearScene();
     destroyWorld();
+    SDL_DestroyWindow(window);
+    SDL_GL_DeleteContext(context);
 }
 

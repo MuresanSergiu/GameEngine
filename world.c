@@ -6,7 +6,7 @@
 #include "utils.h"
 #include "simplex_noise.h"
 
-#define MAX_HEIGHT 128
+#define DEBUG_GREEDY
 
 size_t arrayLength = 0;
 
@@ -27,8 +27,10 @@ float firstOrder(geVertex* v) {
     } else if (v->normal.y == -1) { // bottom
         return v->pos.z;
     } else {
+#ifdef DEBUG_GREEDY
         fprintf(stdout, "Could not find a proper side for quad: \n");
         printVec3(&v->pos);
+#endif
         return 0;
     }
 }
@@ -48,8 +50,10 @@ float secondOrder(geVertex* v) {
     } else if (v->normal.y == -1) { // bottom
         return v->pos.x;
     } else {
+#ifdef DEBUG_GREEDY
         fprintf(stdout, "Could not find a proper side for quad: \n");
         printVec3(&v->pos);
+#endif
         return 0;
     }
 }
@@ -69,8 +73,10 @@ float planeCoordinate(geVertex* v) {
     } else if (v->normal.y == -1) { // bottom
         return v->pos.y;
     } else {
+#ifdef DEBUG_GREEDY
         fprintf(stdout, "Could not find a proper side for quad: \n");
         printVec3(&v->pos);
+#endif
         return 0;
     }
 }
@@ -120,8 +126,8 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
 
     // The new resulting plane
     gePlane res = {
-            .vertices = calloc(plane->numVertices, sizeof(geVertex)),
-            .indices = calloc(plane->numIndices, sizeof(GLuint)),
+            .vertices = plane->vertices,
+            .indices = plane->indices,
             .numVertices = 0,
             .numIndices = 0
     };
@@ -173,7 +179,6 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
 
             if (hashed[j] != 0 || secondOrder(v3) != secondOrder(v) || firstOrder(v3) != firstOrder(v) - 1) {
                 // Exit if there is no next element on the y for v3
-                fprintf(stdout, "New v3 not found\n");
                 break;
             }
 
@@ -185,7 +190,6 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
                 // The area between the new v3 and new v4 needs to be filled with non-hashed faces
                 // Otherwise, there's no new v4
                 if (hashed[j] != 0 || secondOrder(v) != secondOrder(v + 4) - 1) {
-                    fprintf(stdout, "Non-continuous faces\n");
                     break;
                 }
 
@@ -195,7 +199,6 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
 
             if (hashed[j] != 0 || secondOrder(v4) != secondOrder(v) || firstOrder(v4) != firstOrder(v) - 1) {
                 // Exit if there is no next element on the y for v4
-                fprintf(stdout, "Error for v4\n");
                 break;
             }
             // Mark as hashed, the new v3 and new v4 are valid, assign them and try doing this again for a new row
@@ -210,7 +213,7 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
         }
 
         // Revert hashed faces from u to v since last iteration must have failed to mesh
-        if (u != v3) {
+        if (u != v3 && u != NULL && v != NULL) {
             size_t k;
             for (k = (u - plane->vertices) / 4; k <= (v - plane->vertices) / 4; k++) {
                 hashed[k] = 0;
@@ -231,15 +234,16 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
         res.numIndices += 6;
     }
 
-    free(plane->vertices);
-    free(plane->indices);
-
     // Override the old plane and reallocate to save memory
-    realloc(res.vertices, res.numVertices * sizeof(geVertex));
-    realloc(res.indices, res.numIndices * sizeof(GLuint));
 
-    plane->vertices = res.vertices;
-    plane->indices = res.indices;
+//    printf("%llu\n", (unsigned long long) res.vertices);
+    if (realloc(res.vertices, res.numVertices * sizeof(geVertex)) == NULL || res.numVertices == 0) {
+        fprintf(stderr, "Failed to reallocate vertices\n");
+    }
+    if (realloc(res.indices, res.numIndices * sizeof(GLuint)) == NULL || res.numIndices == 0) {
+        fprintf(stderr, "Failed to reallocate indices\n");
+    }
+
     plane->numVertices = res.numVertices;
     plane->numIndices = res.numIndices;
 
@@ -319,7 +323,7 @@ void generateMeshWithGreedy() {
 
     for (oX = 0; oX < world.sizeX; oX++) {
         for (oZ = 0; oZ < world.sizeZ; oZ++) {
-            for (oY = 0; oY < MAX_HEIGHT; oY++) {
+            for (oY = 0; oY < world.sizeY; oY++) {
                 if (world.map[oX][oZ][oY] == 0) {
                     continue;
                 }
@@ -357,13 +361,13 @@ void generateMeshWithGreedy() {
     planes[1] = calloc(world.sizeZ, sizeof(gePlane));
     planes[2] = calloc(world.sizeX, sizeof(gePlane));
     planes[3] = calloc(world.sizeX, sizeof(gePlane));
-    planes[4] = calloc(MAX_HEIGHT, sizeof(gePlane));
-    planes[5] = calloc(MAX_HEIGHT, sizeof(gePlane));
+    planes[4] = calloc(world.sizeY, sizeof(gePlane));
+    planes[5] = calloc(world.sizeY, sizeof(gePlane));
 
     currentBlockIndex = 0;
     for (oX = 0; oX < world.sizeX; oX++) {
         for (oZ = 0; oZ < world.sizeZ; oZ++) {
-            for (oY = 0; oY < MAX_HEIGHT; oY++) {
+            for (oY = 0; oY < world.sizeY; oY++) {
                 if (world.map[oX][oZ][oY] == 0) {
                     continue;
                 }
@@ -375,7 +379,7 @@ void generateMeshWithGreedy() {
                         oX != 0 && world.map[oX - 1][oZ][oY] != 0,
                         oX + 1 < world.sizeX && world.map[oX + 1][oZ][oY] != 0,
 
-                        oY + 1 < MAX_HEIGHT && world.map[oX][oZ][oY + 1] != 0,
+                        oY + 1 < world.sizeY && world.map[oX][oZ][oY + 1] != 0,
                         oY != 0 && world.map[oX][oZ][oY - 1] != 0,
                 };
 
@@ -398,6 +402,12 @@ void generateMeshWithGreedy() {
         }
     }
 
+//    for (k = 0; k < 6; k++) {
+//        if (realloc(planes[k], numPlanes[k] * sizeof(gePlane)) != NULL) {
+//            fprintf(stdout, "Reallocating space of plane %llu to %llu\n", k, numPlanes[k]);
+//        }
+//    }
+
     gettimeofday(&tEnd, NULL);
     printf("Time for culling and sorting voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
     // </editor-fold>
@@ -410,7 +420,9 @@ void generateMeshWithGreedy() {
 
             size_t numIndicesBefore = plane->numIndices, numVerticesBefore = plane->numVertices;
             compressPlaneWithGreedy(plane);
-            printf("%llu) Before %llu, %llu and after %llu, %llu\n", k, numVerticesBefore, numIndicesBefore, plane->numVertices, plane->numIndices);
+#ifdef DEBUG_GREEDY
+            fprintf(stdout, "%llu) Before %llu, %llu and after %llu, %llu\n", k, numVerticesBefore, numIndicesBefore, plane->numVertices, plane->numIndices);
+#endif
         }
     }
 
@@ -420,19 +432,7 @@ void generateMeshWithGreedy() {
     for (k = 0; k < 6; k++) {
         for (l = 0; l < numPlanes[k]; l++) {
             gePlane* plane = &planes[k][l];
-//            fprintf(stderr, "Test\n");
-
-            fprintf(stderr, "%llu) %llu, %llu\n", k, plane->numIndices, plane->numVertices);
             for (j = 0; j < plane->numVertices / 4; j++) {
-//                if (k == 5) {
-//                    printFace(plane->vertices + j * 4);
-//                    printf("%u ", plane->indices[j * 6]);
-//                    printf("%u ", plane->indices[j * 6 + 1]);
-//                    printf("%u ", plane->indices[j * 6 + 2]);
-//                    printf("%u ", plane->indices[j * 6 + 3]);
-//                    printf("%u ", plane->indices[j * 6 + 4]);
-//                    printf("%u \n", plane->indices[j * 6 + 5]);
-//                }
                 plane->indices[j * 6] += indexOffset;
                 plane->indices[j * 6 + 1] += indexOffset;
                 plane->indices[j * 6 + 2] += indexOffset;
@@ -441,31 +441,42 @@ void generateMeshWithGreedy() {
                 plane->indices[j * 6 + 5] += indexOffset;
                 indexOffset += 4;
             }
+
             memcpy(world.shape.vertices + indexOffset - plane->numVertices, plane->vertices, plane->numVertices * sizeof(geVertex));
-            memcpy(world.shape.indices + indexOffset * 3 / 2 - plane->numIndices, plane->indices,  plane->numIndices * sizeof(GLuint));
+            memcpy(world.shape.indices + indexOffset * 3 / 2 - plane->numIndices, plane->indices, plane->numIndices * sizeof(GLuint));
         }
     }
 
     world.shape.numVertices = indexOffset;
     world.shape.numIndices = indexOffset * 3 / 2;
 
-    printf("Total size is %llu and %llu\n", world.shape.numVertices, world.shape.numIndices);
+    printf("Total size is %llu vertices and %llu indices\n", world.shape.numVertices, world.shape.numIndices);
 
     realloc(world.shape.vertices, world.shape.numVertices * sizeof(geVertex));
     realloc(world.shape.indices, world.shape.numIndices * sizeof(GLuint));
 
     for (k = 0; k < 6; k++) {
         for (l = 0; l < numPlanes[k]; l++) {
-//            for (j = 0; j < planes[k][l].numVertices; j += 4) {
-//                printFace(planes[k][l].vertices + j);
-//            }
+#ifdef DEBUG_GREEDY2
+            for (j = 0; j < planes[k][l].numVertices; j += 4) {
+                printFace(planes[k][l].vertices + j);
+            }
+            for (j = 0; j < planes[k][l].numIndices; j += 6) {
+                printf("%llu) %u %u %u %u %u %u\n", j, planes[k][l].indices[j], planes[k][l].indices[j + 1], planes[k][l].indices[j + 2], planes[k][l].indices[j + 3], planes[k][l].indices[j + 4], planes[k][l].indices[j + 5]);
+            }
+#endif
+            fprintf(stdout, "(%llu, %llu) %p %p %llu\n", k, l, planes[k][l].vertices, planes[k][l].indices, sizeof(void*));
             free(planes[k][l].vertices);
-//            for (j = 0; j < planes[k][l].numIndices; j += 6) {
-//                printf("%llu) %u %u %u %u %u %u\n", j, planes[k][l].indices[j], planes[k][l].indices[j + 1], planes[k][l].indices[j + 2], planes[k][l].indices[j + 3], planes[k][l].indices[j + 4], planes[k][l].indices[j + 5]);
-//            }
+            planes[k][l].vertices = NULL;
+
             free(planes[k][l].indices);
+            planes[k][l].indices = NULL;
         }
-        free(planes[k]);
+        if (numPlanes[k] > 0) {
+            fprintf(stdout, "(%llu) %p %llu\n", k, planes[k], sizeof(void*));
+            free(planes[k]);
+            planes[k] = NULL;
+        }
     }
 
     gettimeofday(&tEnd, NULL);
@@ -490,7 +501,7 @@ void initWorld(size_t sizeX, size_t sizeY, size_t sizeZ) {
         }
     }
 
-    generateWorld(32);
+    generateWorld(world.sizeY / 2, world.sizeY / 2);
 }
 
 void destroyWorld() {
@@ -504,14 +515,14 @@ void destroyWorld() {
     free(world.map);
 }
 
-void generateWorld(size_t heightOffsetIntesnsity) {
+void generateWorld(size_t baseHeight, size_t heightOffsetIntesnsity) {
     size_t numVertices = 24;
     size_t numIndices = 36;
     size_t oX, oZ, oY;
 
     for (oX = 0; oX < world.sizeX; oX++) {
         for (oZ = 0; oZ < world.sizeZ; oZ++) {
-            int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * heightOffsetIntesnsity + world.sizeY / 8);
+            int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * heightOffsetIntesnsity + baseHeight);
 //            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
 //            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
 //            printf("Got noise %f\n", perlinNoise(oX, oZ, 16));
@@ -567,6 +578,4 @@ void removeBlockFromWorld(kmVec3* v) {
     world.shape.indices = calloc(numIndices * arrayLength, sizeof(GLuint));
 
     generateMeshWithGreedy();
-
-
 }

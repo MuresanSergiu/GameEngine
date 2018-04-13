@@ -242,7 +242,7 @@ geShape createLine() {
     return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, 2, true);
 }
 
-geShape createCircle(int tess) {
+geShape createCircle(unsigned long long tess) {
     geVertex vertices[1 + tess * 4];
     GLuint indices[tess * 12];
 
@@ -274,7 +274,7 @@ geShape createCircle(int tess) {
     return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices), true);
 }
 
-geShape createCylinder(int tess) {
+geShape createCylinder(unsigned long long tess) {
     geVertex vertices[4 + tess * 16];
     GLuint indices[tess * 48];
 
@@ -416,7 +416,7 @@ geShape createTetrahedron() {
     return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices), true);
 }
 
-geShape createTrigTerrain(int tess) {
+geShape createTrigTerrain(unsigned long long tess) {
     geVertex* vertices = calloc((size_t) (tess * tess), sizeof(geVertex));
     GLuint* indices = calloc((size_t) ((tess - 1) * (tess - 1) * 6), sizeof(GLuint));
 
@@ -502,8 +502,8 @@ geShape createTrigTerrain(int tess) {
 
     for (int k = 0; k < (tess - 1) * (tess - 1) * 6; k += 6) {
         int sq = k / 6;
-        int row = sq / (tess - 1);
-        int column = sq % (tess - 1);
+        unsigned long long row = sq / (tess - 1);
+        unsigned long long column = sq % (tess - 1);
         indices[k    ] = (GLuint) (row * tess + column);
         indices[k + 1] = (GLuint) (row * tess + column + 1);
         indices[k + 2] = (GLuint) ((row + 1) * tess + column + 1);
@@ -547,7 +547,7 @@ geShape createLineNormals(geShape* shape) {
     return result;
 }
 
-geShape createNoiseTerrain(int tess) {
+geShape createNoiseTerrain(unsigned long long tess) {
     geVertex* vertices = calloc((size_t) (tess * tess), sizeof(geVertex));
     GLuint* indices = calloc((size_t) ((tess - 1) * (tess - 1) * 6), sizeof(GLuint));
 
@@ -595,8 +595,8 @@ geShape createNoiseTerrain(int tess) {
     }
     for (int k = 0; k < (tess - 1) * (tess - 1) * 6; k += 6) {
         int sq = k / 6;
-        int row = sq / (tess - 1);
-        int column = sq % (tess - 1);
+        unsigned long long row = sq / (tess - 1);
+        unsigned long long column = sq % (tess - 1);
         indices[k    ] = (GLuint) (row * tess + column);
         indices[k + 1] = (GLuint) (row * tess + column + 1);
         indices[k + 2] = (GLuint) ((row + 1) * tess + column + 1);
@@ -669,7 +669,7 @@ geShape createVoxelWorldDumb(size_t surfaceSize, size_t height) {
     };
 
     size_t i, j, k;
-    size_t oX, oY, oZ;
+    size_t oX, oZ;
     size_t heightMap[surfaceSize * surfaceSize];
     size_t arrayLength = 0;
 
@@ -918,9 +918,12 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
     shape.numVertices = (currentVertex - newVertices);
     shape.numIndices = (currentIndex - newIndices);
 
-    realloc(shape.vertices, shape.numVertices * sizeof(geVertex));
-    realloc(shape.indices, shape.numIndices * sizeof(GLuint));
-
+    if (realloc(shape.vertices, shape.numVertices * sizeof(geVertex)) == NULL) {
+        fprintf(stderr, "Failed to realloc vertices for culled shape\n");
+    }
+    if (realloc(shape.indices, shape.numIndices * sizeof(GLuint)) == NULL) {
+        fprintf(stderr, "Failed to realloc vertices for culled shape\n");
+    }
 
     for (j = 0; j < surfaceSize; j++) {
         for (k = 0; k < surfaceSize; k++) {

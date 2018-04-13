@@ -77,9 +77,9 @@ void initObjects() {
     shadowMap->pos.z = 5;
 
     highlight = initObject();
-    highlight->shape = shapes + GE_CUBE_BORDER;
-    highlight->size.x = highlight->size.y = highlight->size.z = 1.02f;
-    highlight->texture = tex[3];
+    highlight->shape = shapes + GE_CUBE;
+    highlight->size.x = highlight->size.y = highlight->size.z = 1.01f;
+    highlight->texture = tex[7];
     highlight->extraBrightness = 1.0f;
 
     vertexWorldDumb = initObject();
@@ -113,7 +113,7 @@ void initObjects() {
     crosshair->size.x = crosshair->size.y = crosshair->size.z = 0.02f;
     crosshair->pos.z = -1;
 
-    initWorld(50, 128, 50);
+    initWorld(50, 32, 50);
     bufferShape(&world.shape);
 
     world.object = initObject();
@@ -234,6 +234,22 @@ void bufferShape(geShape* shape) {
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(geVertex), (const void*) (shape->offsetBytesVertex + (sizeof(kmVec3) + sizeof(kmVec3))));
 }
+
+void addLine(kmVec3* v1, kmVec3* v2) {
+    geObject* line = initObject();
+    line->shape = shapes + GE_LINE;
+    line->size.x = line->size.y = line->size.z = 20;
+    line->extraBrightness = 1.0f;
+    line->texture = tex[1];
+
+    kmVec3 temp;
+    kmMat4 translate;
+    kmVec3Subtract(&temp, v2, v1);
+    temp.z /= 2;
+    kmMat4Translation(&translate, v1->x, v1->y, v1->z);
+
+}
+
 void addObject(geObject* obj) {
     if (numObjects + 1 > MAX_OBJECTS) {
         fprintf(stderr, "Too many objects to add\n");
@@ -451,12 +467,6 @@ void drawObject(geObject* obj) {
         kmMat4Multiply(&model, &model, &rotX);
         kmMat4Multiply(&model, &model, &rotY);
         kmMat4Multiply(&model, &model, &rotZ);
-    }
-    if (obj->shape == shapes + GE_3D_CROSSHAIR) {
-//        kmMat4Multiply(&model, &model, &camera.rotY);
-//        kmMat4Multiply(&model, &model, &camera.rotLeft);
-    } else {
-
     }
 
     glUniformMatrix4fv(_U(model), 1, GL_FALSE, model.mat);
