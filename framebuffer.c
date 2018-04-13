@@ -79,9 +79,9 @@ void renderShadowMap() {
 
 //    kmVec3 eyePos = objects[712].pos;
 
-    if (x == 0) x = 1.0f;
+    if (xOffset == 0) xOffset = 1.0f;
 //    kmVec3 eyePos = { sinf(x * PI), cosf(x * PI), 0 };
-    x += 0.001f;
+    xOffset += 0.001f;
 //    printf("%f\n", x);
 //    kmVec3 eyePos = { 0.000001f, 1.000001f, 0 };
     kmVec3 eyePos;

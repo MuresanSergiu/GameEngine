@@ -82,21 +82,21 @@ void initObjects() {
     highlight->texture = tex[7];
     highlight->extraBrightness = 1.0f;
 
-    vertexWorldDumb = initObject();
-    vertexWorldDumb->pos.x = -200;
-    vertexWorldDumb->pos.y = 0;
-    vertexWorldDumb->pos.z = 200;
-    vertexWorldDumb->rotation.y = 60;
-    vertexWorldDumb->texture = tex[12];
-    vertexWorldDumb->shape = shapes + GE_VERTEX_WORLD_DUMB;
+//    vertexWorldDumb = initObject();
+//    vertexWorldDumb->pos.x = -200;
+//    vertexWorldDumb->pos.y = 0;
+//    vertexWorldDumb->pos.z = 200;
+//    vertexWorldDumb->rotation.y = 60;
+//    vertexWorldDumb->texture = tex[12];
+//    vertexWorldDumb->shape = shapes + GE_VERTEX_WORLD_DUMB;
 
-    vertexWorldGreedy = initObject();
-    vertexWorldGreedy->pos.x = -200;
-    vertexWorldGreedy->pos.y = 0;
-    vertexWorldGreedy->pos.z = 0;
-    vertexWorldGreedy->rotation.y = 60;
-    vertexWorldGreedy->texture = tex[12];
-    vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_CULLED;
+//    vertexWorldGreedy = initObject();
+//    vertexWorldGreedy->pos.x = -200;
+//    vertexWorldGreedy->pos.y = 0;
+//    vertexWorldGreedy->pos.z = 0;
+//    vertexWorldGreedy->rotation.y = 60;
+//    vertexWorldGreedy->texture = tex[12];
+//    vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_CULLED;
 
 //    geObject* terrainNoise = initObject();
 //    terrainNoise->pos.y = 50;
@@ -268,6 +268,7 @@ void addObjects(geObject* obj, size_t num) {
 }
 
 void initScene() {
+    GLenum err;
     glUseProgram(programs[GE_PROGRAM_MAIN]);
     glGenVertexArrays(INDEX_NUM, vaos);
     glGenFramebuffers(2, fbos);
@@ -294,8 +295,8 @@ void initScene() {
     currentOffsetIndex = shapes[INDEX_NUM - 1].offsetBytesIndex + shapes[INDEX_NUM - 1].numIndices * sizeof(GLuint);
 
     // Add some extra space for dynamically added shapes
-    vertexBufferSize += 100000 * sizeof(geVertex);
-    indexBufferSize += 100000 * sizeof(GLuint);
+    vertexBufferSize += 10000000 * sizeof(geVertex);
+    indexBufferSize += 10000000 * sizeof(GLuint);
 
     // Initialize buffers
     glBindVertexArray(vaos[0]);
@@ -370,9 +371,9 @@ void initScene() {
 //    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, 1, 1);
 //    glFramebufferRenderbuffer()
 
-    GLenum err = glGetError();
+    err = glGetError();
     if (err != GL_NO_ERROR) {
-        printf("%s\n", gluErrorString(err));
+        printf("Error after initScene: %s\n", gluErrorString(err));
     }
 }
 

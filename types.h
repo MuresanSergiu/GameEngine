@@ -66,6 +66,7 @@ typedef struct gePlane {
 typedef struct geWorld {
     long long ***map;
     size_t sizeX, sizeY, sizeZ;
+    size_t numBlocks;
 
     // For rendering
     geObject* object;

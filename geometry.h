@@ -20,8 +20,6 @@ typedef enum {
     GE_TERRAIN_TRIG,
     GE_NORMALS,
     GE_TERRAIN_NOISE,
-    GE_VERTEX_WORLD_DUMB,
-    GE_VERTEX_WORLD_CULLED,
     GE_2D_CROSSHAIR,
     GE_3D_CROSSHAIR,
 
@@ -40,12 +38,11 @@ geShape createTetrahedron();
 geShape createTrigTerrain(unsigned long long tess);
 geShape createLineNormals(geShape* shape);
 geShape createNoiseTerrain(unsigned long long tess);
-geShape createVoxelWorldDumb(size_t surfaceSize, size_t height);
+geShape createVoxelWorldDumb(geWorld* world, bool withFullIndices);
 geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height);
 geShape createVoxelWorldWithGreedy(size_t surfaceSize, size_t height);
 geShape create3DCrossHair();
 geShape create2DCrossHair();
-
 
 geShape shapes[INDEX_NUM];
 

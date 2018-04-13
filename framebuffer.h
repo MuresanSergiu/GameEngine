@@ -9,7 +9,7 @@
 
 geCamera cameraMirror;
 
-float x;
+float xOffset;
 
 void renderMirror();
 void renderShadowMap();
