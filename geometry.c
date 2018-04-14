@@ -11,6 +11,8 @@
 #include "simplex_noise.h"
 
 #define MAX_HEIGHT 128
+#define PER_CUBE_VERTICES 24
+#define PER_CUBE_INDICES 36
 
 const float x = 0;
 const float y = 0;
@@ -753,10 +755,9 @@ geShape create3DCrossHair() {
 }
 
 void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
-    size_t i, j, k;
+    TIME_START;
+    size_t k;
     size_t oX, oY, oZ;
-    size_t numVertices = 24;
-    size_t numIndices = 36;
     size_t currentBlockIndex = 0;
 
     geVertex vertices[] = {
@@ -813,15 +814,13 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
             22, 23, 20
     };
 
-    printf("Array length for dumb is %llu\n", world->numBlocks);
-
     free(world->shape.vertices);
     free(world->shape.indices);
 
-    world->shape.vertices = calloc(numVertices * world->numBlocks, sizeof(geVertex));
-    world->shape.indices = calloc(numIndices * world->numBlocks, sizeof(GLuint));
-    world->shape.numVertices = numVertices * world->numBlocks;
-    world->shape.numIndices = numIndices * world->numBlocks;
+    world->shape.vertices = calloc(PER_CUBE_VERTICES * world->numBlocks, sizeof(geVertex));
+    world->shape.indices = calloc(PER_CUBE_INDICES * world->numBlocks, sizeof(GLuint));
+    world->shape.numVertices = PER_CUBE_VERTICES * world->numBlocks;
+    world->shape.numIndices = PER_CUBE_INDICES * world->numBlocks;
 
     for (oX = 0; oX < world->sizeX; oX++) {
         for (oZ = 0; oZ < world->sizeZ; oZ++) {
@@ -829,9 +828,9 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
                 if (world->map[oX][oZ][oY] == 0) {
                     continue;
                 }
-                for (k = 0; k < numVertices; k++) {
+                for (k = 0; k < PER_CUBE_VERTICES; k++) {
                     geVertex* vertexBlock = vertices + k;
-                    geVertex* vertexWorld = world->shape.vertices + (currentBlockIndex * numVertices + k);
+                    geVertex* vertexWorld = world->shape.vertices + (currentBlockIndex * PER_CUBE_VERTICES + k);
 
                     vertexWorld->normal.x = vertexBlock->normal.x;
                     vertexWorld->normal.y = vertexBlock->normal.y;
@@ -845,11 +844,11 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
                     vertexWorld->texCoords.y = vertexBlock->texCoords.y;
                     vertexWorld->texCoords.z = vertexBlock->texCoords.z;
                 }
-                for (k = 0; k < numIndices; k++) {
+                for (k = 0; k < PER_CUBE_INDICES; k++) {
                     if (withFullIndices) {
-                        world->shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
+                        world->shape.indices[currentBlockIndex * PER_CUBE_INDICES + k] = (GLuint) (indices[k] + currentBlockIndex * PER_CUBE_VERTICES);
                     } else {
-                        world->shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k]);
+                        world->shape.indices[currentBlockIndex * PER_CUBE_INDICES + k] = (GLuint) (indices[k]);
                     }
                 }
                 currentBlockIndex++;
@@ -867,15 +866,14 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
 //        fprintf(stdout, "\n");
 //        printVec3(&shape.vertices[i].pos);
 //    }
+    TIME_END("generating basic mesh");
+    printf("Total vertices and indices: %llu, %llu\n", world->shape.numVertices, world->shape.numIndices);
 }
 
 void geWorldGenerateCulledPlanes(geWorld* world) {
-    struct timeval tStart, tEnd;
+    TIME_START;
     size_t oX, oY, oZ, k, l;
-    size_t numIndices = 36, numVertices = 24;
     size_t currentBlockIndex = 0;
-
-    gettimeofday(&tStart, NULL);
 
     for (k = 0; k < 6; k++) {
         for (l = 0; l < world->numPlanes[k]; l++) {
@@ -916,12 +914,12 @@ void geWorldGenerateCulledPlanes(geWorld* world) {
                         // Remove indices based on face of the cube in favour of square based indices
                         size_t p;
                         for (p = 0; p < 6; p++) {
-                            world->shape.indices[(currentBlockIndex * numIndices + k * 6) + p] -= k * 4;
+                            world->shape.indices[(currentBlockIndex * PER_CUBE_INDICES + k * 6) + p] -= k * 4;
                         }
 
                         // Add the quad to an ordered plane
-                        addFaceInOrderedPlane(world->shape.vertices + (currentBlockIndex * numVertices + k * 4),
-                                              world->shape.indices + (currentBlockIndex * numIndices + k * 6),
+                        addFaceInOrderedPlane(world->shape.vertices + (currentBlockIndex * PER_CUBE_VERTICES + k * 4),
+                                              world->shape.indices + (currentBlockIndex * PER_CUBE_INDICES + k * 6),
                                               world->planes[k], world->numPlanes + k);
                     }
                 }
@@ -935,27 +933,29 @@ void geWorldGenerateCulledPlanes(geWorld* world) {
 //            fprintf(stdout, "Reallocating space of plane %llu to %llu\n", k, numPlanes[k]);
 //        }
 //    }
-
-    gettimeofday(&tEnd, NULL);
-    printf("Time for culling and sorting voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
+    TIME_END("culling and sorting voxel world");
 }
 
 void geWorldCompressCulledPlanesWithGreedy(geWorld* world) {
+    TIME_START;
     size_t k, l;
     for (k = 0; k < 6; k++) {
         for (l = 0; l < world->numPlanes[k]; l++) {
             gePlane* plane = &world->planes[k][l];
-
+#ifdef DEBUG_GREEDY
             size_t numIndicesBefore = plane->numIndices, numVerticesBefore = plane->numVertices;
+#endif
             gePlaneCompressWithGreedy(plane);
 #ifdef DEBUG_GREEDY
             fprintf(stdout, "%llu) Before %llu, %llu and after %llu, %llu\n", k, numVerticesBefore, numIndicesBefore, plane->numVertices, plane->numIndices);
 #endif
         }
     }
+    TIME_END("greedy");
 }
 
 void geWorldShapeFromPlanes(geWorld* world) {
+    TIME_START;
     size_t k, l, j, indexOffset = 0;
     for (k = 0; k < 6; k++) {
         for (l = 0; l < world->numPlanes[k]; l++) {
@@ -978,10 +978,10 @@ void geWorldShapeFromPlanes(geWorld* world) {
     world->shape.numVertices = indexOffset;
     world->shape.numIndices = indexOffset * 3 / 2;
 
-    printf("Total size is %llu vertices and %llu indices\n", world->shape.numVertices, world->shape.numIndices);
-
     realloc(world->shape.vertices, world->shape.numVertices * sizeof(geVertex));
     realloc(world->shape.indices, world->shape.numIndices * sizeof(GLuint));
+    TIME_END("converting to shape");
+    printf("Total vertices and indices: %llu, %llu\n\n", world->shape.numVertices, world->shape.numIndices);
 }
 
 void gePlaneCompressWithGreedy(gePlane* plane) {

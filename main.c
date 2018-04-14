@@ -72,11 +72,13 @@ void updateKeyHandles() {
     if (keymap[SDL_SCANCODE_LEFT] || keymap[SDL_SCANCODE_A]) {
         kmVec3 left;
         kmVec3Cross(&left, &camera.direction, &camera.up);
+        kmVec3Normalize(&left, &left);
         kmVec3Scale(&left, &left, -dist);
         kmVec3Add(&camera.pos, &camera.pos, &left);
     } else if (keymap[SDL_SCANCODE_RIGHT] || keymap[SDL_SCANCODE_D]) {
         kmVec3 left;
         kmVec3Cross(&left, &camera.direction, &camera.up);
+        kmVec3Normalize(&left, &left);
         kmVec3Scale(&left, &left, dist);
         kmVec3Add(&camera.pos, &camera.pos, &left);
     } else if (keymap[SDL_SCANCODE_DOWN] || keymap[SDL_SCANCODE_S]) {

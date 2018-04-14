@@ -10,6 +10,12 @@
 
 #define PI 3.14159265f
 #define STRINGIFY(X) #X
+#define TIME_START\
+    struct timeval tStart, tEnd;\
+    gettimeofday(&tStart, NULL)
+#define TIME_END(MSG)\
+    gettimeofday(&tEnd, NULL);\
+    printf("Time for " MSG ": %.2lfms\n", timeDiff(tEnd, tStart))
 
 char** readFile(char* path);
 void printFace(geVertex* v);

@@ -7,14 +7,7 @@
 #include "geometry.h"
 #include "simplex_noise.h"
 
-#define DEBUG_GREEDY
-
-/* INTERNAL FUNCTIONS */
-
-
-
 /* EXTERNAL FUNCTIONS */
-
 void initWorld(size_t sizeX, size_t sizeY, size_t sizeZ) {
     world.sizeX = sizeX;
     world.sizeY = sizeY;
@@ -34,7 +27,7 @@ void initWorld(size_t sizeX, size_t sizeY, size_t sizeZ) {
 }
 
 void destroyWorld() {
-    size_t oX, oZ;
+    size_t oX, oZ, k, l;
     for (oX = 0; oX < world.sizeX; oX++) {
         for (oZ = 0; oZ < world.sizeZ; oZ++) {
             free(world.map[oX][oZ]);
@@ -42,6 +35,15 @@ void destroyWorld() {
         free(world.map[oX]);
     }
     free(world.map);
+
+    for (k = 0; k < 6; k++) {
+        for (l = 0; l < world.numPlanes[k]; l++) {
+            free(world.planes[k][l].vertices);
+            free(world.planes[k][l].indices);
+        }
+        free(world.planes[k]);
+        world.numPlanes[k] = 0;
+    }
 }
 
 void generateWorld(size_t baseHeight, size_t heightOffsetIntesnsity) {
