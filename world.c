@@ -45,16 +45,11 @@ void destroyWorld() {
 }
 
 void generateWorld(size_t baseHeight, size_t heightOffsetIntesnsity) {
-    size_t numVertices = 24;
-    size_t numIndices = 36;
     size_t oX, oZ, oY;
 
     for (oX = 0; oX < world.sizeX; oX++) {
         for (oZ = 0; oZ < world.sizeZ; oZ++) {
             int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * heightOffsetIntesnsity + baseHeight);
-//            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
-//            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
-//            printf("Got noise %f\n", perlinNoise(oX, oZ, 16));
             for (oY = 0; oY < noise; oY++) {
                 world.map[oX][oZ][oY] = 1;
             }
@@ -62,7 +57,10 @@ void generateWorld(size_t baseHeight, size_t heightOffsetIntesnsity) {
         }
     }
 
-    world.shape = createVoxelWorldDumb(&world, true);
+    geWorldGenerateShape(&world, false);
+    geWorldGenerateCulledPlanes(&world);
+    geWorldCompressCulledPlanesWithGreedy(&world);
+    geWorldShapeFromPlanes(&world);
 }
 
 kmVec3 findInWorld(kmVec3* v) {
@@ -91,18 +89,8 @@ void removeBlockFromWorld(kmVec3* v) {
 
     world.numBlocks--;
 
-//    world.shape.numVertices = numVertices * arrayLength;
-//    world.shape.numIndices = numIndices * arrayLength;
-//    world.shape.vertices = calloc(numVertices * arrayLength, sizeof(geVertex));
-//    world.shape.indices = calloc(numIndices * arrayLength, sizeof(GLuint));
-
-    geShape shape = createVoxelWorldDumb(&world, true);
-
-    free(world.shape.vertices);
-    free(world.shape.indices);
-
-    world.shape.vertices = shape.vertices;
-    world.shape.indices = shape.indices;
-    world.shape.numVertices = shape.numVertices;
-    world.shape.numIndices = shape.numIndices;
+    geWorldGenerateShape(&world, false);
+    geWorldGenerateCulledPlanes(&world);
+    geWorldCompressCulledPlanesWithGreedy(&world);
+    geWorldShapeFromPlanes(&world);
 }

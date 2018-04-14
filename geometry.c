@@ -39,6 +39,115 @@ geShape shapeFromVerticesAndIndices(geVertex* vertices, size_t numVertices, GLui
     return shape;
 }
 
+// Given a face gets the coordinate for the first parameter with which face ordering is done
+float firstOrder(geVertex* v) {
+    if (v->normal.z == 1) { // front
+        return v->pos.y;
+    } else if (v->normal.z == -1) { // back
+        return v->pos.y;
+    } else if (v->normal.x == -1) { // left
+        return v->pos.y;
+    } else if (v->normal.x == 1) { // right
+        return v->pos.y;
+    } else if (v->normal.y == 1) { // top
+        return v->pos.z;
+    } else if (v->normal.y == -1) { // bottom
+        return v->pos.z;
+    } else {
+#ifdef DEBUG_GREEDY
+        fprintf(stdout, "Could not find a proper side for quad: \n");
+        printVec3(&v->pos);
+#endif
+        return 0;
+    }
+}
+
+// Given a face gets the coordinate for the second parameter with which face ordering is done
+float secondOrder(geVertex* v) {
+    if (v->normal.z == 1) { // front
+        return v->pos.x;
+    } else if (v->normal.z == -1) { // back
+        return v->pos.x;
+    } else if (v->normal.x == -1) { // left
+        return v->pos.z;
+    } else if (v->normal.x == 1) { // right
+        return v->pos.z;
+    } else if (v->normal.y == 1) { // top
+        return v->pos.x;
+    } else if (v->normal.y == -1) { // bottom
+        return v->pos.x;
+    } else {
+#ifdef DEBUG_GREEDY
+        fprintf(stdout, "Could not find a proper side for quad: \n");
+        printVec3(&v->pos);
+#endif
+        return 0;
+    }
+}
+
+// Given a face gets the coordinate of the plane in which it resides
+float planeCoordinate(geVertex* v) {
+    if (v->normal.z == 1) { // front
+        return v->pos.z;
+    } else if (v->normal.z == -1) { // back
+        return v->pos.z;
+    } else if (v->normal.x == -1) { // left
+        return v->pos.x;
+    } else if (v->normal.x == 1) { // right
+        return v->pos.x;
+    } else if (v->normal.y == 1) { // top
+        return v->pos.y;
+    } else if (v->normal.y == -1) { // bottom
+        return v->pos.y;
+    } else {
+#ifdef DEBUG_GREEDY
+        fprintf(stdout, "Could not find a proper side for quad: \n");
+        printVec3(&v->pos);
+#endif
+        return 0;
+    }
+}
+
+// Adds a face (4x geVertex and 6x indices) inside a sorted plane
+void addFaceInOrderedPlane(geVertex* vertices, GLuint* indices, gePlane* planes, size_t* numPlanes) {
+    size_t i;
+
+    // Get which plane to add the quad in
+    gePlane* destination = NULL;
+    for (i = 0; i < *numPlanes; i++) {
+        if (planeCoordinate(planes[i].vertices + 0) == planeCoordinate(vertices + 0)) {
+            destination = planes + i;
+            break;
+        }
+    }
+
+    // Create it if it doesn't exist
+    if (destination == NULL) {
+        destination = planes + *numPlanes;
+        destination->vertices = calloc(8192 * 4, sizeof(geVertex));
+        destination->indices = calloc(8192 * 6, sizeof(GLuint));
+        (*numPlanes)++;
+    }
+
+    // Find the position at which we'll add the face
+    for (i = 0; i < destination->numVertices / 4; i++) {
+        geVertex* planePos = destination->vertices + i * 4;
+        if (firstOrder(planePos) > firstOrder(vertices + 0) || firstOrder(planePos) == firstOrder(vertices + 0) && secondOrder(planePos) > secondOrder(vertices + 0)) {
+            break;
+        }
+    }
+
+    // Add the face
+    memcpy(destination->vertices + (i + 1) * 4, destination->vertices + i * 4, (destination->numVertices - i * 4) * sizeof(geVertex));
+    memcpy(destination->indices + (i + 1) * 6, destination->indices + i * 6, (destination->numIndices - i * 6) * sizeof(GLuint));
+
+    memcpy(destination->vertices + i * 4, vertices, sizeof(geVertex) * 4);
+    memcpy(destination->indices + i * 6, indices, sizeof(GLuint) * 6);
+
+    destination->numVertices += 4;
+    destination->numIndices += 6;
+}
+
 // Given a shape removes a face
 void removeFace(geShape* shape, size_t offsetVertex, size_t offsetIndex, size_t numFaces) {
     size_t k;
@@ -613,7 +722,37 @@ geShape createNoiseTerrain(unsigned long long tess) {
     return shape;
 }
 
-geShape createVoxelWorldDumb(geWorld* world, bool withFullIndices) {
+geShape create2DCrossHair() {
+    geVertex vertices[] = {
+            {{ x - size / 2, 0, 1 }, { 0, 0, 1 }, { 0, 0 }},
+            {{ x + size / 2, 0, 1 }, { 0, 0, 1 }, { 1, 0 }},
+            {{ 0, y - size / 2, 1 }, { 0, 0, 1 }, { 0, 0 }},
+            {{ 0, y + size / 2, 1 }, { 0, 0, 1 }, { 0, 1 }}
+    };
+
+    GLuint indices[] = {
+            0, 1, 2, 3
+    };
+
+    return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, 4, true);
+}
+
+geShape create3DCrossHair() {
+    geVertex vertices[] = {
+            {{ 0, 0, 0.0f }, {0, 1.0f, 0}, {0, 0, 0}},
+            {{ 1, 0, 0.0f }, {0, 1.0f, 0}, {0, 1, 0}},
+            {{ 0, 0, 0.0f }, {0, 1.0f, 0}, {0, 0, 1}},
+            {{ 0, 1, 0.0f }, {0, 1.0f, 0}, {0, 1, 1}},
+            {{ 0, 0, 0.0f }, {0, 1.0f, 0}, {0, 0, 2}},
+            {{ 0, 0, 1.0f }, {0, 1.0f, 0}, {0, 1, 2}},
+    };
+    GLuint indices[] = {
+            0, 1, 2, 3, 4, 5
+    };
+    return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, 6, true);
+}
+
+void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
     size_t i, j, k;
     size_t oX, oY, oZ;
     size_t numVertices = 24;
@@ -674,14 +813,15 @@ geShape createVoxelWorldDumb(geWorld* world, bool withFullIndices) {
             22, 23, 20
     };
 
-    geShape shape = { 0 };
-
     printf("Array length for dumb is %llu\n", world->numBlocks);
 
-    shape.numVertices = numVertices * world->numBlocks;
-    shape.numIndices = numIndices * world->numBlocks;
-    shape.vertices = calloc(numVertices * world->numBlocks, sizeof(geVertex));
-    shape.indices = calloc(numIndices * world->numBlocks, sizeof(GLuint));
+    free(world->shape.vertices);
+    free(world->shape.indices);
+
+    world->shape.vertices = calloc(numVertices * world->numBlocks, sizeof(geVertex));
+    world->shape.indices = calloc(numIndices * world->numBlocks, sizeof(GLuint));
+    world->shape.numVertices = numVertices * world->numBlocks;
+    world->shape.numIndices = numIndices * world->numBlocks;
 
     for (oX = 0; oX < world->sizeX; oX++) {
         for (oZ = 0; oZ < world->sizeZ; oZ++) {
@@ -691,7 +831,7 @@ geShape createVoxelWorldDumb(geWorld* world, bool withFullIndices) {
                 }
                 for (k = 0; k < numVertices; k++) {
                     geVertex* vertexBlock = vertices + k;
-                    geVertex* vertexWorld = shape.vertices + (currentBlockIndex * numVertices + k);
+                    geVertex* vertexWorld = world->shape.vertices + (currentBlockIndex * numVertices + k);
 
                     vertexWorld->normal.x = vertexBlock->normal.x;
                     vertexWorld->normal.y = vertexBlock->normal.y;
@@ -707,9 +847,9 @@ geShape createVoxelWorldDumb(geWorld* world, bool withFullIndices) {
                 }
                 for (k = 0; k < numIndices; k++) {
                     if (withFullIndices) {
-                        shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
+                        world->shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
                     } else {
-                        shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k]);
+                        world->shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k]);
                     }
                 }
                 currentBlockIndex++;
@@ -727,178 +867,62 @@ geShape createVoxelWorldDumb(geWorld* world, bool withFullIndices) {
 //        fprintf(stdout, "\n");
 //        printVec3(&shape.vertices[i].pos);
 //    }
-
-    return shape;
 }
 
-geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
+void geWorldGenerateCulledPlanes(geWorld* world) {
     struct timeval tStart, tEnd;
-    gettimeofday(&tStart, NULL);
-
-    // <editor-fold> INIT STAGE
-    geVertex vertices[] = {
-            // FRONT
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 0}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 1}},
-            // BACK
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 0}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 1}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 0}},
-            // LEFT
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1}},
-            // RIGHT
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0}},
-            // TOP
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1}},
-            // BOTTOM
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1}},
-    };
-
-    GLuint indices[] = {
-            // FRONT
-            0, 1, 2,
-            2, 3, 0,
-            // BACK
-            4, 5, 6,
-            6, 7, 4,
-            // LEFT
-            8, 9, 10,
-            10, 11, 8,
-            // RIGHT
-            12, 13, 14,
-            14, 15, 12,
-            // TOP
-            16, 17, 18,
-            18, 19, 16,
-            // BOTTOM
-            20, 23, 22,
-            22, 21, 20
-    };
-
-    size_t oX, oY, oZ, j, k;
-    size_t arrayLength = 0;
-
-    int*** map = calloc(sizeof(char*), surfaceSize);
-    for (j = 0; j < surfaceSize; j++) {
-        map[j] = calloc(sizeof(char*), surfaceSize);
-        for (k = 0; k < surfaceSize; k++) {
-            map[j][k] = calloc(sizeof(int), MAX_HEIGHT);
-        }
-    }
-
-    for (oX = 0; oX < surfaceSize; oX++) {
-        for (oZ = 0; oZ < surfaceSize; oZ++) {
-            int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * height + 16);
-//            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
-//            int noise = (int) floorf(perlinNoise(oX, oZ, 16));// * MAX_HEIGHT);
-//            printf("Got noise %f\n", perlinNoise(oX, oZ, 16));
-            for (oY = 0; oY < noise; oY++) {
-                map[oX][oZ][oY] = 1;
-            }
-            arrayLength += (size_t) (noise);
-        }
-    }
-    printf("Array length for culled is %llu\n", arrayLength);
-
-    geShape shape;
-
-    size_t numVertices = 24;
-    size_t numIndices = 36;
-
-    shape.numVertices = numVertices * arrayLength;
-    shape.numIndices = numIndices * arrayLength;
-    shape.vertices = calloc(numVertices * arrayLength, sizeof(geVertex));
-    shape.indices = calloc(numIndices * arrayLength, sizeof(GLuint));
-
+    size_t oX, oY, oZ, k, l;
+    size_t numIndices = 36, numVertices = 24;
     size_t currentBlockIndex = 0;
 
-    for (oX = 0; oX < surfaceSize; oX++) {
-        for (oZ = 0; oZ < surfaceSize; oZ++) {
-            for (oY = 0; oY < MAX_HEIGHT; oY++) {
-                if (map[oX][oZ][oY] == 0) {
-                    continue;
-                }
-                for (k = 0; k < numVertices; k++) {
-                    geVertex* vertexBlock = vertices + k;
-                    geVertex* vertexWorld = shape.vertices + (currentBlockIndex * numVertices + k);
-
-                    vertexWorld->normal.x = vertexBlock->normal.x;
-                    vertexWorld->normal.y = vertexBlock->normal.y;
-                    vertexWorld->normal.z = vertexBlock->normal.z;
-
-                    vertexWorld->pos.x = vertexBlock->pos.x + oX;
-                    vertexWorld->pos.y = vertexBlock->pos.y + oY;
-                    vertexWorld->pos.z = vertexBlock->pos.z + oZ;
-
-                    vertexWorld->texCoords.x = vertexBlock->texCoords.x;
-                    vertexWorld->texCoords.y = vertexBlock->texCoords.y;
-                    vertexWorld->texCoords.z = vertexBlock->texCoords.z;
-                }
-                for (k = 0; k < numIndices; k++) {
-                    shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] + currentBlockIndex * numVertices);
-                }
-                currentBlockIndex++;
-            }
-        }
-    }
-    gettimeofday(&tEnd, NULL);
-    printf("Time for initializing voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
     gettimeofday(&tStart, NULL);
 
-    // </editor-fold>
-    geVertex* newVertices = malloc(numVertices * arrayLength * sizeof(geVertex));
-    GLuint* newIndices = malloc(numIndices * arrayLength * sizeof(GLuint));
+    for (k = 0; k < 6; k++) {
+        for (l = 0; l < world->numPlanes[k]; l++) {
+            free(world->planes[k][l].vertices);
+            free(world->planes[k][l].indices);
+        }
+        free(world->planes[k]);
+        world->numPlanes[k] = 0;
+    }
 
-    geVertex* currentVertex = newVertices;
-    GLuint* currentIndex = newIndices;
+    world->planes[0] = calloc(world->sizeZ, sizeof(gePlane));
+    world->planes[1] = calloc(world->sizeZ, sizeof(gePlane));
+    world->planes[2] = calloc(world->sizeX, sizeof(gePlane));
+    world->planes[3] = calloc(world->sizeX, sizeof(gePlane));
+    world->planes[4] = calloc(world->sizeY, sizeof(gePlane));
+    world->planes[5] = calloc(world->sizeY, sizeof(gePlane));
 
-    currentBlockIndex = 0;
-    for (oX = 0; oX < surfaceSize; oX++) {
-        for (oZ = 0; oZ < surfaceSize; oZ++) {
-            for (oY = 0; oY < MAX_HEIGHT; oY++) {
-                if (map[oX][oZ][oY] == 0) {
+    for (oX = 0; oX < world->sizeX; oX++) {
+        for (oZ = 0; oZ < world->sizeZ; oZ++) {
+            for (oY = 0; oY < world->sizeY; oY++) {
+                if (world->map[oX][oZ][oY] == 0) {
                     continue;
                 }
 
                 bool isAdjacent[] = {
-                        oZ + 1 < surfaceSize && map[oX][oZ + 1][oY] != 0,
-                        oZ != 0 && map[oX][oZ - 1][oY] != 0,
+                        oZ + 1 < world->sizeZ && world->map[oX][oZ + 1][oY] != 0,
+                        oZ != 0 && world->map[oX][oZ - 1][oY] != 0,
 
-                        oX != 0 && map[oX - 1][oZ][oY] != 0,
-                        oX + 1 < surfaceSize && map[oX + 1][oZ][oY] != 0,
+                        oX != 0 && world->map[oX - 1][oZ][oY] != 0,
+                        oX + 1 < world->sizeX && world->map[oX + 1][oZ][oY] != 0,
 
-                        oY + 1 < MAX_HEIGHT && map[oX][oZ][oY + 1] != 0,
-                        oY != 0 && map[oX][oZ][oY - 1] != 0,
+                        oY + 1 < world->sizeY && world->map[oX][oZ][oY + 1] != 0,
+                        oY != 0 && world->map[oX][oZ][oY - 1] != 0,
                 };
 
                 for (k = 0; k < 6; k++) {
                     if (!isAdjacent[k]) {
-                        memcpy(currentVertex, shape.vertices + (currentBlockIndex * numVertices + k * 4), sizeof(geVertex) * 4);
-                        memcpy(currentIndex, shape.indices + (currentBlockIndex * numIndices + k * 6), sizeof(GLuint) * 6);
-
+                        // Remove indices based on face of the cube in favour of square based indices
                         size_t p;
-                        size_t escape = (currentBlockIndex * numVertices + k * 4) - (currentVertex - newVertices);
                         for (p = 0; p < 6; p++) {
-                            currentIndex[p] -= escape;
+                            world->shape.indices[(currentBlockIndex * numIndices + k * 6) + p] -= k * 4;
                         }
 
-                        currentVertex += 4;
-                        currentIndex += 6;
+                        // Add the quad to an ordered plane
+                        addFaceInOrderedPlane(world->shape.vertices + (currentBlockIndex * numVertices + k * 4),
+                                              world->shape.indices + (currentBlockIndex * numIndices + k * 6),
+                                              world->planes[k], world->numPlanes + k);
                     }
                 }
                 currentBlockIndex++;
@@ -906,185 +930,63 @@ geShape createVoxelWorldWithCulling(size_t surfaceSize, size_t height) {
         }
     }
 
-    free(shape.vertices);
-    free(shape.indices);
-
-    shape.vertices = newVertices;
-    shape.indices = newIndices;
-
-    shape.numVertices = (currentVertex - newVertices);
-    shape.numIndices = (currentIndex - newIndices);
-
-    if (realloc(shape.vertices, shape.numVertices * sizeof(geVertex)) == NULL) {
-        fprintf(stderr, "Failed to realloc vertices for culled shape\n");
-    }
-    if (realloc(shape.indices, shape.numIndices * sizeof(GLuint)) == NULL) {
-        fprintf(stderr, "Failed to realloc vertices for culled shape\n");
-    }
-
-    for (j = 0; j < surfaceSize; j++) {
-        for (k = 0; k < surfaceSize; k++) {
-            free(map[j][k]);
-        }
-        free(map[j]);
-    }
-    free(map);
+//    for (k = 0; k < 6; k++) {
+//        if (realloc(planes[k], numPlanes[k] * sizeof(gePlane)) != NULL) {
+//            fprintf(stdout, "Reallocating space of plane %llu to %llu\n", k, numPlanes[k]);
+//        }
+//    }
 
     gettimeofday(&tEnd, NULL);
-    printf("Time for culling voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
-
-    return shape;
+    printf("Time for culling and sorting voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
 }
 
-geShape create2DCrossHair() {
-    geVertex vertices[] = {
-            {{ x - size / 2, 0, 1 }, { 0, 0, 1 }, { 0, 0 }},
-            {{ x + size / 2, 0, 1 }, { 0, 0, 1 }, { 1, 0 }},
-            {{ 0, y - size / 2, 1 }, { 0, 0, 1 }, { 0, 0 }},
-            {{ 0, y + size / 2, 1 }, { 0, 0, 1 }, { 0, 1 }}
-    };
+void geWorldCompressCulledPlanesWithGreedy(geWorld* world) {
+    size_t k, l;
+    for (k = 0; k < 6; k++) {
+        for (l = 0; l < world->numPlanes[k]; l++) {
+            gePlane* plane = &world->planes[k][l];
 
-    GLuint indices[] = {
-            0, 1, 2, 3
-    };
-
-    return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, 4, true);
-}
-
-geShape create3DCrossHair() {
-    geVertex vertices[] = {
-            {{ 0, 0, 0.0f }, {0, 1.0f, 0}, {0, 0, 0}},
-            {{ 1, 0, 0.0f }, {0, 1.0f, 0}, {0, 1, 0}},
-            {{ 0, 0, 0.0f }, {0, 1.0f, 0}, {0, 0, 1}},
-            {{ 0, 1, 0.0f }, {0, 1.0f, 0}, {0, 1, 1}},
-            {{ 0, 0, 0.0f }, {0, 1.0f, 0}, {0, 0, 2}},
-            {{ 0, 0, 1.0f }, {0, 1.0f, 0}, {0, 1, 2}},
-    };
-    GLuint indices[] = {
-            0, 1, 2, 3, 4, 5
-    };
-    return shapeFromVerticesAndIndices(vertices, sizeof(vertices) / sizeof(*vertices), indices, 6, true);
-}
-
-// Given a face gets the coordinate for the first parameter with which face ordering is done
-float firstOrder(geVertex* v) {
-    if (v->normal.z == 1) { // front
-        return v->pos.y;
-    } else if (v->normal.z == -1) { // back
-        return v->pos.y;
-    } else if (v->normal.x == -1) { // left
-        return v->pos.y;
-    } else if (v->normal.x == 1) { // right
-        return v->pos.y;
-    } else if (v->normal.y == 1) { // top
-        return v->pos.z;
-    } else if (v->normal.y == -1) { // bottom
-        return v->pos.z;
-    } else {
+            size_t numIndicesBefore = plane->numIndices, numVerticesBefore = plane->numVertices;
+            gePlaneCompressWithGreedy(plane);
 #ifdef DEBUG_GREEDY
-        fprintf(stdout, "Could not find a proper side for quad: \n");
-        printVec3(&v->pos);
+            fprintf(stdout, "%llu) Before %llu, %llu and after %llu, %llu\n", k, numVerticesBefore, numIndicesBefore, plane->numVertices, plane->numIndices);
 #endif
-        return 0;
+        }
     }
 }
 
-// Given a face gets the coordinate for the second parameter with which face ordering is done
-float secondOrder(geVertex* v) {
-    if (v->normal.z == 1) { // front
-        return v->pos.x;
-    } else if (v->normal.z == -1) { // back
-        return v->pos.x;
-    } else if (v->normal.x == -1) { // left
-        return v->pos.z;
-    } else if (v->normal.x == 1) { // right
-        return v->pos.z;
-    } else if (v->normal.y == 1) { // top
-        return v->pos.x;
-    } else if (v->normal.y == -1) { // bottom
-        return v->pos.x;
-    } else {
-#ifdef DEBUG_GREEDY
-        fprintf(stdout, "Could not find a proper side for quad: \n");
-        printVec3(&v->pos);
-#endif
-        return 0;
-    }
-}
+void geWorldShapeFromPlanes(geWorld* world) {
+    size_t k, l, j, indexOffset = 0;
+    for (k = 0; k < 6; k++) {
+        for (l = 0; l < world->numPlanes[k]; l++) {
+            gePlane* plane = &world->planes[k][l];
+            for (j = 0; j < plane->numVertices / 4; j++) {
+                plane->indices[j * 6] += indexOffset;
+                plane->indices[j * 6 + 1] += indexOffset;
+                plane->indices[j * 6 + 2] += indexOffset;
+                plane->indices[j * 6 + 3] += indexOffset;
+                plane->indices[j * 6 + 4] += indexOffset;
+                plane->indices[j * 6 + 5] += indexOffset;
+                indexOffset += 4;
+            }
 
-// Given a face gets the coordinate of the plane in which it resides
-float planeCoordinate(geVertex* v) {
-    if (v->normal.z == 1) { // front
-        return v->pos.z;
-    } else if (v->normal.z == -1) { // back
-        return v->pos.z;
-    } else if (v->normal.x == -1) { // left
-        return v->pos.x;
-    } else if (v->normal.x == 1) { // right
-        return v->pos.x;
-    } else if (v->normal.y == 1) { // top
-        return v->pos.y;
-    } else if (v->normal.y == -1) { // bottom
-        return v->pos.y;
-    } else {
-#ifdef DEBUG_GREEDY
-        fprintf(stdout, "Could not find a proper side for quad: \n");
-        printVec3(&v->pos);
-#endif
-        return 0;
-    }
-}
-
-// Adds a face (4x geVertex and 6x indices) inside a sorted plane
-void addFaceInOrderedPlane(geVertex* vertices, GLuint* indices, gePlane* planes, size_t* numPlanes) {
-    size_t i;
-
-    // Get which plane to add the quad in
-    gePlane* destination = NULL;
-    for (i = 0; i < *numPlanes; i++) {
-        if (planeCoordinate(planes[i].vertices + 0) == planeCoordinate(vertices + 0)) {
-            destination = planes + i;
-            break;
+            memcpy(world->shape.vertices + indexOffset - plane->numVertices, plane->vertices, plane->numVertices * sizeof(geVertex));
+            memcpy(world->shape.indices + indexOffset * 3 / 2 - plane->numIndices, plane->indices, plane->numIndices * sizeof(GLuint));
         }
     }
 
-    // Create it if it doesn't exist
-    if (destination == NULL) {
-        destination = planes + *numPlanes;
-        destination->vertices = calloc(8192 * 4, sizeof(geVertex));
-        destination->indices = calloc(8192 * 6, sizeof(GLuint));
-        (*numPlanes)++;
-    }
+    world->shape.numVertices = indexOffset;
+    world->shape.numIndices = indexOffset * 3 / 2;
 
-    // Find the position at which we'll add the face
-    for (i = 0; i < destination->numVertices / 4; i++) {
-        geVertex* planePos = destination->vertices + i * 4;
-        if (firstOrder(planePos) > firstOrder(vertices + 0) || firstOrder(planePos) == firstOrder(vertices + 0) && secondOrder(planePos) > secondOrder(vertices + 0)) {
-            break;
-        }
-    }
+    printf("Total size is %llu vertices and %llu indices\n", world->shape.numVertices, world->shape.numIndices);
 
-    // Add the face
-    memcpy(destination->vertices + (i + 1) * 4, destination->vertices + i * 4, (destination->numVertices - i * 4) * sizeof(geVertex));
-    memcpy(destination->indices + (i + 1) * 6, destination->indices + i * 6, (destination->numIndices - i * 6) * sizeof(GLuint));
-
-    memcpy(destination->vertices + i * 4, vertices, sizeof(geVertex) * 4);
-    memcpy(destination->indices + i * 6, indices, sizeof(GLuint) * 6);
-
-    destination->numVertices += 4;
-    destination->numIndices += 6;
+    realloc(world->shape.vertices, world->shape.numVertices * sizeof(geVertex));
+    realloc(world->shape.indices, world->shape.numIndices * sizeof(GLuint));
 }
 
-gePlane compressPlaneWithGreedy(gePlane* plane) {
+void gePlaneCompressWithGreedy(gePlane* plane) {
     size_t i;
-
-    // The new resulting plane
-    gePlane res = {
-            .vertices = plane->vertices,
-            .indices = plane->indices,
-            .numVertices = 0,
-            .numIndices = 0
-    };
+    size_t newNumVertices = 0, newNumIndices = 0;
 
     // Take texture coordinate diffs to expand based on the first vertex' coords
     kmVec3 diffFirstOrder, diffSecondOrder, temp;
@@ -1174,267 +1076,30 @@ gePlane compressPlaneWithGreedy(gePlane* plane) {
             }
         }
 
-        // Copy the face to the new plane
-        memcpy(res.vertices + res.numVertices, v1 + 0, sizeof(geVertex));
-        res.numVertices++;
-        memcpy(res.vertices + res.numVertices, v2 + 1, sizeof(geVertex));
-        res.numVertices++;
-        memcpy(res.vertices + res.numVertices, v4 + 2, sizeof(geVertex));
-        res.numVertices++;
-        memcpy(res.vertices + res.numVertices, v3 + 3, sizeof(geVertex));
-        res.numVertices++;
+        // Copy the face to the plane
+        memcpy(plane->vertices + newNumVertices, v1 + 0, sizeof(geVertex));
+        newNumVertices++;
+        memcpy(plane->vertices + newNumVertices, v2 + 1, sizeof(geVertex));
+        newNumVertices++;
+        memcpy(plane->vertices + newNumVertices, v4 + 2, sizeof(geVertex));
+        newNumVertices++;
+        memcpy(plane->vertices + newNumVertices, v3 + 3, sizeof(geVertex));
+        newNumVertices++;
 
-        memcpy(res.indices + res.numIndices, indices, sizeof(GLuint) * 6);
-        res.numIndices += 6;
+        memcpy(plane->indices + newNumIndices, indices, sizeof(GLuint) * 6);
+        newNumIndices += 6;
     }
 
-    // Override the old plane and reallocate to save memory
-
-//    printf("%llu\n", (unsigned long long) res.vertices);
-    if (realloc(res.vertices, res.numVertices * sizeof(geVertex)) == NULL || res.numVertices == 0) {
+    // Reallocate to save on memory
+    if (realloc(plane->vertices, newNumVertices * sizeof(geVertex)) == NULL || newNumVertices == 0) {
         fprintf(stderr, "Failed to reallocate vertices\n");
     }
-    if (realloc(res.indices, res.numIndices * sizeof(GLuint)) == NULL || res.numIndices == 0) {
+    if (realloc(plane->indices, newNumIndices * sizeof(GLuint)) == NULL || newNumIndices == 0) {
         fprintf(stderr, "Failed to reallocate indices\n");
     }
 
-    plane->numVertices = res.numVertices;
-    plane->numIndices = res.numIndices;
+    plane->numVertices = newNumVertices;
+    plane->numIndices = newNumIndices;
 
     free(hashed);
-
-    return res;
-}
-
-void generateMeshWithGreedy(geWorld* world) {
-    struct timeval tStart, tEnd;
-    float x = 0, y = 0, z = 0, size = 1.0f;
-    size_t l, k, j;
-    size_t oX, oY, oZ;
-    size_t numVertices = 24, numIndices = 36;
-    size_t indexOffset = 0, currentBlockIndex = 0;
-
-    gePlane* planes[6]; // front - back - left - right - up - down
-    size_t numPlanes[6] = { 0 };
-
-    gettimeofday(&tStart, NULL);
-
-    // <editor-fold> INIT STAGE
-    geVertex vertices[] = {
-            // FRONT
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 0}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 1}},
-            // BACK
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 0}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 0}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 1}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1}},
-            // LEFT
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1}},
-            // RIGHT
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1}},
-            // TOP
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1}},
-            // BOTTOM
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1}},
-    };
-
-    GLuint indices[] = {
-            // FRONT
-            0, 1, 2,
-            2, 3, 0,
-            // BACK
-            4, 7, 6,
-            6, 5, 4,
-            // LEFT
-            8, 9, 10,
-            10, 11, 8,
-            // RIGHT
-            12, 15, 14,
-            14, 13, 12,
-            // TOP
-            16, 19, 18,
-            18, 17, 16,
-            // BOTTOM
-            20, 21, 22,
-            22, 23, 20
-    };
-
-
-    for (oX = 0; oX < world->sizeX; oX++) {
-        for (oZ = 0; oZ < world->sizeZ; oZ++) {
-            for (oY = 0; oY < world->sizeY; oY++) {
-                if (world->map[oX][oZ][oY] == 0) {
-                    continue;
-                }
-                for (k = 0; k < numVertices; k++) {
-                    geVertex* vertexBlock = vertices + k;
-                    geVertex* vertexWorld = world->shape.vertices + (currentBlockIndex * numVertices + k);
-
-                    vertexWorld->normal.x = vertexBlock->normal.x;
-                    vertexWorld->normal.y = vertexBlock->normal.y;
-                    vertexWorld->normal.z = vertexBlock->normal.z;
-
-                    vertexWorld->pos.x = vertexBlock->pos.x + oX;
-                    vertexWorld->pos.y = vertexBlock->pos.y + oY;
-                    vertexWorld->pos.z = vertexBlock->pos.z + oZ;
-
-                    vertexWorld->texCoords.x = vertexBlock->texCoords.x;
-                    vertexWorld->texCoords.y = vertexBlock->texCoords.y;
-                    vertexWorld->texCoords.z = vertexBlock->texCoords.z;
-                }
-                for (k = 0; k < numIndices; k++) {
-                    world->shape.indices[currentBlockIndex * numIndices + k] = (GLuint) (indices[k] /*+ currentBlockIndex * numVertices*/);
-                }
-                currentBlockIndex++;
-            }
-        }
-    }
-    gettimeofday(&tEnd, NULL);
-    printf("Time for initializing voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
-    gettimeofday(&tStart, NULL);
-
-    // </editor-fold>
-
-    // <editor-fold> CULLING STAGE
-    planes[0] = calloc(world->sizeZ, sizeof(gePlane));
-    planes[1] = calloc(world->sizeZ, sizeof(gePlane));
-    planes[2] = calloc(world->sizeX, sizeof(gePlane));
-    planes[3] = calloc(world->sizeX, sizeof(gePlane));
-    planes[4] = calloc(world->sizeY, sizeof(gePlane));
-    planes[5] = calloc(world->sizeY, sizeof(gePlane));
-
-    currentBlockIndex = 0;
-    for (oX = 0; oX < world->sizeX; oX++) {
-        for (oZ = 0; oZ < world->sizeZ; oZ++) {
-            for (oY = 0; oY < world->sizeY; oY++) {
-                if (world->map[oX][oZ][oY] == 0) {
-                    continue;
-                }
-
-                bool isAdjacent[] = {
-                        oZ + 1 < world->sizeZ && world->map[oX][oZ + 1][oY] != 0,
-                        oZ != 0 && world->map[oX][oZ - 1][oY] != 0,
-
-                        oX != 0 && world->map[oX - 1][oZ][oY] != 0,
-                        oX + 1 < world->sizeX && world->map[oX + 1][oZ][oY] != 0,
-
-                        oY + 1 < world->sizeY && world->map[oX][oZ][oY + 1] != 0,
-                        oY != 0 && world->map[oX][oZ][oY - 1] != 0,
-                };
-
-                for (k = 0; k < 6; k++) {
-                    if (!isAdjacent[k]) {
-                        // Remove indices based on face of the cube in favour of square based indices
-                        size_t p;
-                        for (p = 0; p < 6; p++) {
-                            world->shape.indices[(currentBlockIndex * numIndices + k * 6) + p] -= k * 4;
-                        }
-
-                        // Add the quad to an ordered plane
-                        addFaceInOrderedPlane(world->shape.vertices + (currentBlockIndex * numVertices + k * 4),
-                                              world->shape.indices + (currentBlockIndex * numIndices + k * 6),
-                                              planes[k], numPlanes + k);
-                    }
-                }
-                currentBlockIndex++;
-            }
-        }
-    }
-
-//    for (k = 0; k < 6; k++) {
-//        if (realloc(planes[k], numPlanes[k] * sizeof(gePlane)) != NULL) {
-//            fprintf(stdout, "Reallocating space of plane %llu to %llu\n", k, numPlanes[k]);
-//        }
-//    }
-
-    gettimeofday(&tEnd, NULL);
-    printf("Time for culling and sorting voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
-    // </editor-fold>
-
-    // <editor-fold> GREEDY STAGE
-    gettimeofday(&tStart, NULL);
-    for (k = 0; k < 6; k++) {
-        for (l = 0; l < numPlanes[k]; l++) {
-            gePlane* plane = &planes[k][l];
-
-            size_t numIndicesBefore = plane->numIndices, numVerticesBefore = plane->numVertices;
-            compressPlaneWithGreedy(plane);
-#ifdef DEBUG_GREEDY
-            fprintf(stdout, "%llu) Before %llu, %llu and after %llu, %llu\n", k, numVerticesBefore, numIndicesBefore, plane->numVertices, plane->numIndices);
-#endif
-        }
-    }
-
-    // Fix indices since all of them are either
-    // 0 1 2 2 3 0 or
-    // 0 3 2 2 1 0
-    for (k = 0; k < 6; k++) {
-        for (l = 0; l < numPlanes[k]; l++) {
-            gePlane* plane = &planes[k][l];
-            for (j = 0; j < plane->numVertices / 4; j++) {
-                plane->indices[j * 6] += indexOffset;
-                plane->indices[j * 6 + 1] += indexOffset;
-                plane->indices[j * 6 + 2] += indexOffset;
-                plane->indices[j * 6 + 3] += indexOffset;
-                plane->indices[j * 6 + 4] += indexOffset;
-                plane->indices[j * 6 + 5] += indexOffset;
-                indexOffset += 4;
-            }
-
-            memcpy(world->shape.vertices + indexOffset - plane->numVertices, plane->vertices, plane->numVertices * sizeof(geVertex));
-            memcpy(world->shape.indices + indexOffset * 3 / 2 - plane->numIndices, plane->indices, plane->numIndices * sizeof(GLuint));
-        }
-    }
-
-    world->shape.numVertices = indexOffset;
-    world->shape.numIndices = indexOffset * 3 / 2;
-
-    printf("Total size is %llu vertices and %llu indices\n", world->shape.numVertices, world->shape.numIndices);
-
-    realloc(world->shape.vertices, world->shape.numVertices * sizeof(geVertex));
-    realloc(world->shape.indices, world->shape.numIndices * sizeof(GLuint));
-
-    for (k = 0; k < 6; k++) {
-        for (l = 0; l < numPlanes[k]; l++) {
-#ifdef DEBUG_GREEDY2
-            for (j = 0; j < planes[k][l].numVertices; j += 4) {
-                printFace(planes[k][l].vertices + j);
-            }
-            for (j = 0; j < planes[k][l].numIndices; j += 6) {
-                printf("%llu) %u %u %u %u %u %u\n", j, planes[k][l].indices[j], planes[k][l].indices[j + 1], planes[k][l].indices[j + 2], planes[k][l].indices[j + 3], planes[k][l].indices[j + 4], planes[k][l].indices[j + 5]);
-            }
-#endif
-            fprintf(stdout, "(%llu, %llu) %p %p %llu\n", k, l, planes[k][l].vertices, planes[k][l].indices, sizeof(void*));
-            free(planes[k][l].vertices);
-            planes[k][l].vertices = NULL;
-
-            free(planes[k][l].indices);
-            planes[k][l].indices = NULL;
-        }
-        if (numPlanes[k] > 0) {
-            fprintf(stdout, "(%llu) %p %llu\n", k, planes[k], sizeof(void*));
-            free(planes[k]);
-            planes[k] = NULL;
-        }
-    }
-
-    gettimeofday(&tEnd, NULL);
-    printf("Time for greedy on voxel world: %.2lfms\n", timeDiff(tEnd, tStart));
-
-    // </editor-fold>
 }

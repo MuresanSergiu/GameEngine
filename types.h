@@ -72,6 +72,8 @@ typedef struct geWorld {
     geObject* object;
     geShape shape;
 
+    gePlane* planes[6];
+    size_t numPlanes[6];
 } geWorld;
 
 #endif //GAMEENGINE_TYPES_H
