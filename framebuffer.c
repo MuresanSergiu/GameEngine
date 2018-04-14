@@ -30,11 +30,11 @@ void renderMirror() {
     kmMat4 rot;
 
 //    kmMat4RotationAxisAngle(&rot, &mirror->shape->vertices[0].normal, PI);
-    kmVec3Subtract(&cameraMirror.direction, &mirror->pos, &camera.pos);
+    kmVec3Subtract(&cameraMirror.direction, &mirror->pos, &cameraMain.pos);
 //    kmMat4RotationAxisAngle(&rot, &mirror->shape->vertices[0].normal, PI);
 //    kmVec3MultiplyMat4(&cameraMirror.direction, &cameraMirror.direction, &rot);
     kmVec3Normalize(&cameraMirror.direction, &cameraMirror.direction);
-//    kmVec3MultiplyMat4(&cameraMirror.direction, &camera.direction, &rot);
+//    kmVec3MultiplyMat4(&cameraMirror.direction, &cameraMain.direction, &rot);
     kmVec3Scale(&cameraMirror.direction, &cameraMirror.direction, -1);
 
     cameraMirror.aspectRatio = 1;
@@ -43,7 +43,7 @@ void renderMirror() {
     cameraMirror.up.z = 0;
 
     cameraMirror.pos = mirror->pos;
-    cameraUpdate(&cameraMirror);
+    geCameraUpdate(&cameraMirror);
 
 //    kmMat4RotationZ(&rot, 0.01f * PI / 180.0f);
 //    kmVec3MultiplyMat4(&lightPoint2, &lightPoint2, &rot);

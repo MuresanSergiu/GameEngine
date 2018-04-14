@@ -23,14 +23,14 @@ size_t numObjects;
 geObject objects[MAX_OBJECTS];
 geObject* linePointer;
 
-void addObject(geObject* obj);
-void addObjects(geObject* obj, size_t num);
+void geObjectAdd(geObject* obj);
+void geObjectAddAll(geObject* obj, size_t num);
 
 void initScene();
 void update();
 void drawScene();
-void drawObject(geObject* obj);
+void geObjectDraw(geObject* obj);
 void clearScene();
-void bufferShape(geShape* shape);
+void geShapeBuffer(geShape* shape);
 
 #endif //GAMEENGINE_DRAW_H

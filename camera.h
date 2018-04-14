@@ -7,10 +7,10 @@
 
 #include "types.h"
 
-geCamera camera;
+geCamera cameraMain;
 
-void cameraUpdate(geCamera* camera);
-kmVec3 cameraRaycast();
+void geCameraUpdate(geCamera* camera);
+kmVec3 geCameraRaycast(geCamera* camera);
 //kmVec3 cameraRight();
 
 

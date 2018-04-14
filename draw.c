@@ -26,7 +26,7 @@ geObject* highlight;
 
 /* INTERNAL FUNCTIONS */
 
-geObject* initObject() {
+geObject* geObjectInit() {
     geObject* obj = &objects[numObjects++];
     obj->texture = 0;
     obj->shape = 0;
@@ -46,7 +46,7 @@ void initObjects() {
     // Initialize all objects
     memset(objects, 0, sizeof(objects));
 
-    sun = initObject();
+    sun = geObjectInit();
     sun->shape = shapes + GE_CUBE;
     sun->texture = tex[4];
     sun->size.x = sun->size.y = sun->size.z = 30;
@@ -58,7 +58,7 @@ void initObjects() {
 //    objects[712].size.x = objects[712].size.y = objects[712].size.z = 30;
 //    objects[712].pos = lightPoint;
 
-    sky = initObject();
+    sky = geObjectInit();
     sky->shape = shapes + GE_CUBE_INVERTED;
     sky->texture = tex[5];
     sky->size.x = sky->size.y = sky->size.z = 500;
@@ -68,7 +68,7 @@ void initObjects() {
     sky->exemptFromViewTranslation = true;
     sky->extraBrightness = 1;
 
-    shadowMap = initObject();
+    shadowMap = geObjectInit();
     shadowMap->shape = shapes + GE_SQUARE;
     shadowMap->texture = tex[10];
     shadowMap->size.x = shadowMap->size.y = 4;
@@ -76,13 +76,13 @@ void initObjects() {
     shadowMap->pos.x = -2;
     shadowMap->pos.z = 5;
 
-    highlight = initObject();
+    highlight = geObjectInit();
     highlight->shape = shapes + GE_CUBE;
     highlight->size.x = highlight->size.y = highlight->size.z = 1.01f;
     highlight->texture = tex[7];
     highlight->extraBrightness = 1.0f;
 
-//    vertexWorldDumb = initObject();
+//    vertexWorldDumb = geObjectInit();
 //    vertexWorldDumb->pos.x = -200;
 //    vertexWorldDumb->pos.y = 0;
 //    vertexWorldDumb->pos.z = 200;
@@ -90,7 +90,7 @@ void initObjects() {
 //    vertexWorldDumb->texture = tex[12];
 //    vertexWorldDumb->shape = shapes + GE_VERTEX_WORLD_DUMB;
 
-//    vertexWorldGreedy = initObject();
+//    vertexWorldGreedy = geObjectInit();
 //    vertexWorldGreedy->pos.x = -200;
 //    vertexWorldGreedy->pos.y = 0;
 //    vertexWorldGreedy->pos.z = 0;
@@ -98,14 +98,14 @@ void initObjects() {
 //    vertexWorldGreedy->texture = tex[12];
 //    vertexWorldGreedy->shape = shapes + GE_VERTEX_WORLD_CULLED;
 
-//    geObject* terrainNoise = initObject();
+//    geObject* terrainNoise = geObjectInit();
 //    terrainNoise->pos.y = 50;
 //    terrainNoise->shape = shapes + GE_TERRAIN_NOISE;
 //    terrainNoise->texture = tex[2];
 //    terrainNoise->size.x = terrainNoise->size.y = terrainNoise->size.z = 100;
 
 
-    crosshair = initObject();
+    crosshair = geObjectInit();
     crosshair->texture = tex[3];
     crosshair->shape = shapes + GE_2D_CROSSHAIR;
     crosshair->exemptFromView = true;
@@ -113,14 +113,14 @@ void initObjects() {
     crosshair->size.x = crosshair->size.y = crosshair->size.z = 0.02f;
     crosshair->pos.z = -1;
 
-    initWorld(50, 32, 50);
-    bufferShape(&world.shape);
+    geWorldInit(50, 32, 50);
+    geShapeBuffer(&worldMain.shape);
 
-    world.object = initObject();
-    world.object->shape = &world.shape;
-    world.object->texture = tex[12];
+    worldMain.object = geObjectInit();
+    worldMain.object->shape = &worldMain.shape;
+    worldMain.object->texture = tex[12];
 
-    linePointer = initObject();
+    linePointer = geObjectInit();
     linePointer->shape = shapes + GE_LINE;
     linePointer->size.x = linePointer->size.y = linePointer->size.z = 20;
     linePointer->extraBrightness = 1.0f;
@@ -189,7 +189,7 @@ void initObjects() {
 
 /* EXTERNAL FUNCTIONS */
 
-void bufferShape(geShape* shape) {
+void geShapeBuffer(geShape* shape) {
     glUseProgram(programs[GE_PROGRAM_MAIN]);
 
     // If shape already exists just update it
@@ -236,7 +236,7 @@ void bufferShape(geShape* shape) {
 }
 
 void addLine(kmVec3* v1, kmVec3* v2) {
-    geObject* line = initObject();
+    geObject* line = geObjectInit();
     line->shape = shapes + GE_LINE;
     line->size.x = line->size.y = line->size.z = 20;
     line->extraBrightness = 1.0f;
@@ -250,7 +250,7 @@ void addLine(kmVec3* v1, kmVec3* v2) {
 
 }
 
-void addObject(geObject* obj) {
+void geObjectAdd(geObject* obj) {
     if (numObjects + 1 > MAX_OBJECTS) {
         fprintf(stderr, "Too many objects to add\n");
         return;
@@ -258,7 +258,7 @@ void addObject(geObject* obj) {
     memcpy(&objects[numObjects++], obj, sizeof(geObject));
 }
 
-void addObjects(geObject* obj, size_t num) {
+void geObjectAddAll(geObject* obj, size_t num) {
     if (numObjects + num > MAX_OBJECTS) {
         fprintf(stderr, "Too many objects to add\n");
         return;
@@ -378,9 +378,9 @@ void initScene() {
 }
 
 void update() {
-    cameraUpdate(&camera);
+    geCameraUpdate(&cameraMain);
 
-    kmVec3 raycastResult = cameraRaycast();
+    kmVec3 raycastResult = geCameraRaycast(&cameraMain);
     memcpy(&highlight->pos, &raycastResult, sizeof(kmVec3));
 
     // Update lights
@@ -406,7 +406,7 @@ void update() {
     glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
 
     // Update crosshair
-//    memcpy(&crosshair->rotation, &camera.direction, sizeof(kmVec3));
+//    memcpy(&crosshair->rotation, &cameraMain.direction, sizeof(kmVec3));
 }
 
 void drawScene() {
@@ -439,11 +439,11 @@ void drawScene() {
             glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
         }
 
-        drawObject(obj);
+        geObjectDraw(obj);
     }
 }
 
-void drawObject(geObject* obj) {
+void geObjectDraw(geObject* obj) {
     // UPDATE MODEL UNIFORM
     kmMat4 rotX, rotY, rotZ;
     kmMat4 scale;

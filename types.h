@@ -43,7 +43,6 @@ typedef struct geObject {
     GLushort glTextureId;
     GLushort glTextureType;
     GLfloat extraBrightness;
-
 } geObject;
 
 typedef struct geCamera {

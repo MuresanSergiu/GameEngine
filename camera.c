@@ -13,7 +13,7 @@
 
 kmVec3 cameraDefaultDirection = {0, 0, -1};
 
-void cameraUpdate(geCamera* camera) {
+void geCameraUpdate(geCamera* camera) {
     // Perspective and view matrix construction
     kmMat4 projection;
     kmMat4 view;
@@ -35,14 +35,14 @@ void cameraUpdate(geCamera* camera) {
     glUniform3fv(_U(pl) + 1, 1, (const GLfloat *) &camera->pos);
 }
 
-kmVec3 cameraRaycast() {
+kmVec3 geCameraRaycast(geCamera* camera) {
     size_t i;
-    kmVec3 pos = camera.pos;
+    kmVec3 pos = camera->pos;
     kmVec3 dir;
-    kmVec3Scale(&dir, &camera.direction, 0.01f);
+    kmVec3Scale(&dir, &camera->direction, 0.01f);
     kmVec3 block = { -1, -1, -1 };
     for (i = 0; i < 1500; i++) {
-        block = findInWorld(&pos);
+        block = geWorldFind(&pos);
         if (block.x != -1 && block.y != -1 && block.z != -1) {
             return block;
         }

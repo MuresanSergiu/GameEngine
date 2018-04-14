@@ -3,12 +3,12 @@
 
 #include "types.h"
 
-geWorld world;
+geWorld worldMain;
 
-void initWorld(size_t sizeX, size_t sizeY, size_t sizeZ);
-void generateWorld(size_t baseHeight, size_t heightOffsetIntesnsity);
-void destroyWorld();
-kmVec3 findInWorld(kmVec3* v);
-void removeBlockFromWorld(kmVec3* v);
+void geWorldInit(size_t sizeX, size_t sizeY, size_t sizeZ);
+void geWorldGenerate(size_t baseHeight, size_t heightOffsetIntesnsity);
+void geWorldDestroy();
+kmVec3 geWorldFind(kmVec3* v);
+void geWorldRemoveBlock(kmVec3* v);
 
 #endif //GAMEENGINE_WORLD_H

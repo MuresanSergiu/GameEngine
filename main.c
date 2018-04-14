@@ -15,7 +15,8 @@
 SDL_Window* window = NULL;
 SDL_GLContext* context = NULL;
 
-const int SCREEN_HEIGHT = 900, SCREEN_WIDTH = 1600;
+#define SCREEN_HEIGHT 900
+#define SCREEN_WIDTH 1600
 
 //void DebugCallbackARB(GLenum source​, GLenum type​, GLuint id​, GLenum severity​, GLsizei length​, const GLchar* message​, const GLvoid* userParam​) {
 //
@@ -54,8 +55,10 @@ void initSDL() {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
-//    window = SDL_CreateWindow("Hi", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
-    window = SDL_CreateWindow("Hi", 2560 - SCREEN_WIDTH, 30, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+    // Get display size and position accordingly
+    SDL_DisplayMode DM;
+    SDL_GetCurrentDisplayMode(0, &DM);
+    window = SDL_CreateWindow("Mesh optimization", DM.w - SCREEN_WIDTH - 8, 30, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
     context = SDL_GL_CreateContext(window);
 
     SDL_GL_SetSwapInterval(1);
@@ -71,24 +74,24 @@ void updateKeyHandles() {
     float dist = 0.5f;
     if (keymap[SDL_SCANCODE_LEFT] || keymap[SDL_SCANCODE_A]) {
         kmVec3 left;
-        kmVec3Cross(&left, &camera.direction, &camera.up);
+        kmVec3Cross(&left, &cameraMain.direction, &cameraMain.up);
         kmVec3Normalize(&left, &left);
         kmVec3Scale(&left, &left, -dist);
-        kmVec3Add(&camera.pos, &camera.pos, &left);
+        kmVec3Add(&cameraMain.pos, &cameraMain.pos, &left);
     } else if (keymap[SDL_SCANCODE_RIGHT] || keymap[SDL_SCANCODE_D]) {
         kmVec3 left;
-        kmVec3Cross(&left, &camera.direction, &camera.up);
+        kmVec3Cross(&left, &cameraMain.direction, &cameraMain.up);
         kmVec3Normalize(&left, &left);
         kmVec3Scale(&left, &left, dist);
-        kmVec3Add(&camera.pos, &camera.pos, &left);
+        kmVec3Add(&cameraMain.pos, &cameraMain.pos, &left);
     } else if (keymap[SDL_SCANCODE_DOWN] || keymap[SDL_SCANCODE_S]) {
         kmVec3 s;
-        kmVec3Scale(&s, &camera.direction, -dist);
-        kmVec3Add(&camera.pos, &camera.pos, &s);
+        kmVec3Scale(&s, &cameraMain.direction, -dist);
+        kmVec3Add(&cameraMain.pos, &cameraMain.pos, &s);
     } else if (keymap[SDL_SCANCODE_UP] || keymap[SDL_SCANCODE_W]) {
         kmVec3 s;
-        kmVec3Scale(&s, &camera.direction, dist);
-        kmVec3Add(&camera.pos, &camera.pos, &s);
+        kmVec3Scale(&s, &cameraMain.direction, dist);
+        kmVec3Add(&cameraMain.pos, &cameraMain.pos, &s);
     } else if (keymap[SDL_SCANCODE_ESCAPE]) {
         SDL_SetRelativeMouseMode(SDL_FALSE);
         glUniform3f(_U(_mouseOutColor), -0.1f, -0.1f, -0.1f);
@@ -119,16 +122,16 @@ void updateMouseHandles(int x, int y) {
             SDL_SetRelativeMouseMode(SDL_TRUE);
             glUniform3f(_U(_mouseOutColor), 0, 0, 0);
         } else {
-            kmVec3 raycast = cameraRaycast();
+            kmVec3 raycast = geCameraRaycast(&cameraMain);
             if (raycast.x != -1 && raycast.y != -1 && raycast.z != -1) {
-                removeBlockFromWorld(&raycast);
-                bufferShape(&world.shape);
+                geWorldRemoveBlock(&raycast);
+                geShapeBuffer(&worldMain.shape);
             }
         }
     }
     if (mousemap[SDL_BUTTON_RIGHT]) {
-        memcpy(&linePointer->rotation, &camera.rotation, sizeof(kmVec3));
-        memcpy(&linePointer->pos, &camera.pos, sizeof(kmVec3));
+        memcpy(&linePointer->rotation, &cameraMain.rotation, sizeof(kmVec3));
+        memcpy(&linePointer->pos, &cameraMain.pos, sizeof(kmVec3));
     }
 }
 
@@ -144,10 +147,10 @@ int main(int argc, char** argv) {
     glUniform1f(_U(specularPower), debugSpecularPower);
 
     SDL_Event e;
-    memset(&camera, 0, sizeof(camera));
-    camera.up.y = 1;
-    camera.pos.y = 0.1f;
-    camera.aspectRatio = 16.0f / 9.0f;
+    memset(&cameraMain, 0, sizeof(cameraMain));
+    cameraMain.up.y = 1;
+    cameraMain.pos.y = 0.1f;
+    cameraMain.aspectRatio = 16.0f / 9.0f;
 
     bool loop = true;
     while(loop) {
@@ -171,18 +174,18 @@ int main(int argc, char** argv) {
                 updateMouseHandles(e.button.x, e.button.y);
             } else if (e.type == SDL_MOUSEMOTION) {
                 if (SDL_GetRelativeMouseMode()) {
-                    camera.rotation.y += -e.motion.xrel / 16.0f;
-                    camera.rotation.x += -e.motion.yrel / 16.0f;
+                    cameraMain.rotation.y += -e.motion.xrel / 16.0f;
+                    cameraMain.rotation.x += -e.motion.yrel / 16.0f;
 
-                    if (camera.rotation.x > 85.0f) {
-                        camera.rotation.x = 85.0f;
-                    } else if (camera.rotation.x < -85.0f) {
-                        camera.rotation.x = -85.0f;
+                    if (cameraMain.rotation.x > 85.0f) {
+                        cameraMain.rotation.x = 85.0f;
+                    } else if (cameraMain.rotation.x < -85.0f) {
+                        cameraMain.rotation.x = -85.0f;
                     }
-                    if (camera.rotation.y > 360.0f) {
-                        camera.rotation.y -= 360.0f;
-                    } else if (camera.rotation.y < 0) {
-                        camera.rotation.y += 360.0f;
+                    if (cameraMain.rotation.y > 360.0f) {
+                        cameraMain.rotation.y -= 360.0f;
+                    } else if (cameraMain.rotation.y < 0) {
+                        cameraMain.rotation.y += 360.0f;
                     }
                 }
             }
@@ -202,7 +205,7 @@ int main(int argc, char** argv) {
 //        printf("took %lf\n", 1000000.0 / ((stop.tv_usec - start.tv_usec)));
     }
     clearScene();
-    destroyWorld();
+    geWorldDestroy();
     SDL_DestroyWindow(window);
     SDL_GL_DeleteContext(context);
 }
