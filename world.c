@@ -59,10 +59,10 @@ void geWorldGenerate(size_t baseHeight, size_t heightOffsetIntesnsity) {
         }
     }
 
-    geWorldGenerateShape(&world, false);
-    geWorldGenerateCulledPlanes(&world);
-    geWorldCompressCulledPlanesWithGreedy(&world);
-    geWorldShapeFromPlanes(&world);
+    geWorldGenerateShape(&worldMain, false);
+    geWorldGenerateCulledPlanes(&worldMain);
+    geWorldCompressCulledPlanesWithGreedy(&worldMain);
+    geWorldShapeFromPlanes(&worldMain);
 }
 
 kmVec3 geWorldFind(kmVec3* v) {
@@ -91,8 +91,8 @@ void geWorldRemoveBlock(kmVec3* v) {
 
     worldMain.numBlocks--;
 
-    geWorldGenerateShape(&world, false);
-    geWorldGenerateCulledPlanes(&world);
-    geWorldCompressCulledPlanesWithGreedy(&world);
-    geWorldShapeFromPlanes(&world);
+    geWorldGenerateShape(&worldMain, false);
+    geWorldGenerateCulledPlanes(&worldMain);
+    geWorldCompressCulledPlanesWithGreedy(&worldMain);
+    geWorldShapeFromPlanes(&worldMain);
 }
