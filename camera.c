@@ -42,7 +42,7 @@ kmVec3 geCameraRaycast(geCamera* camera) {
     kmVec3Scale(&dir, &camera->direction, 0.01f);
     kmVec3 block = { -1, -1, -1 };
     for (i = 0; i < 1500; i++) {
-        block = geWorldFind(&pos);
+        block = geWorldFind(&worldMain, &pos);
         if (block.x != -1 && block.y != -1 && block.z != -1) {
             return block;
         }

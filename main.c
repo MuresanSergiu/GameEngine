@@ -124,7 +124,7 @@ void updateMouseHandles(int x, int y) {
         } else {
             kmVec3 raycast = geCameraRaycast(&cameraMain);
             if (raycast.x != -1 && raycast.y != -1 && raycast.z != -1) {
-                geWorldRemoveBlock(&raycast);
+                geWorldRemoveBlock(&worldMain, &raycast);
                 geShapeBuffer(&worldMain.shape);
             }
         }
@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
 //        printf("took %lf\n", 1000000.0 / ((stop.tv_usec - start.tv_usec)));
     }
     clearScene();
-    geWorldDestroy();
+    geWorldDestroy(&worldMain);
     SDL_DestroyWindow(window);
     SDL_GL_DeleteContext(context);
 }

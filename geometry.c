@@ -866,8 +866,12 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
 //        fprintf(stdout, "\n");
 //        printVec3(&shape.vertices[i].pos);
 //    }
+    printf("---------------- BASIC MESH ----------------------\n");
     TIME_END("generating basic mesh");
     printf("Total vertices and indices: %llu, %llu\n", world->shape.numVertices, world->shape.numIndices);
+    if (withFullIndices) {
+        printf("\n");
+    }
 }
 
 void geWorldGenerateCulledPlanes(geWorld* world) {
@@ -933,6 +937,7 @@ void geWorldGenerateCulledPlanes(geWorld* world) {
 //            fprintf(stdout, "Reallocating space of plane %llu to %llu\n", k, numPlanes[k]);
 //        }
 //    }
+    printf("---------------- CULLED MESH ----------------------\n");
     TIME_END("culling and sorting voxel world");
 }
 
@@ -951,6 +956,7 @@ void geWorldCompressCulledPlanesWithGreedy(geWorld* world) {
 #endif
         }
     }
+    printf("---------------- GREEDY MESH ----------------------\n");
     TIME_END("greedy");
 }
 

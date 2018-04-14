@@ -66,6 +66,7 @@ typedef struct geWorld {
     long long ***map;
     size_t sizeX, sizeY, sizeZ;
     size_t numBlocks;
+    unsigned char algorithm;
 
     // For rendering
     geObject* object;

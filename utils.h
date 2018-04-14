@@ -6,6 +6,7 @@
 #define GAMEENGINE_UTILS_H
 
 #include <stdbool.h>
+#include <sys/time.h>
 #include "types.h"
 
 #define PI 3.14159265f

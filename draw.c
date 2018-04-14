@@ -113,9 +113,22 @@ void initObjects() {
     crosshair->size.x = crosshair->size.y = crosshair->size.z = 0.02f;
     crosshair->pos.z = -1;
 
-    geWorldInit(50, 32, 50);
-    geShapeBuffer(&worldMain.shape);
+    worldsSecondary[0] = geWorldInit(GE_ALGORITHM_BASIC, 50, 32, 50);
+    geShapeBuffer(&worldsSecondary[0].shape);
+    worldsSecondary[0].object = geObjectInit();
+    worldsSecondary[0].object->shape = &worldsSecondary[0].shape;
+    worldsSecondary[0].object->texture = tex[12];
+    worldsSecondary[0].object->pos.x = 51;
 
+    worldsSecondary[1] = geWorldInit(GE_ALGORITHM_CULLED, 50, 32, 50);
+    geShapeBuffer(&worldsSecondary[1].shape);
+    worldsSecondary[1].object = geObjectInit();
+    worldsSecondary[1].object->shape = &worldsSecondary[1].shape;
+    worldsSecondary[1].object->texture = tex[12];
+    worldsSecondary[1].object->pos.z = 51;
+
+    worldMain = geWorldInit(GE_ALGORITHM_GREEDY, 50, 32, 50);
+    geShapeBuffer(&worldMain.shape);
     worldMain.object = geObjectInit();
     worldMain.object->shape = &worldMain.shape;
     worldMain.object->texture = tex[12];
