@@ -843,6 +843,8 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
                     vertexWorld->texCoords.x = vertexBlock->texCoords.x;
                     vertexWorld->texCoords.y = vertexBlock->texCoords.y;
                     vertexWorld->texCoords.z = vertexBlock->texCoords.z;
+
+                    vertexWorld->texCoords.z = 1;
                 }
                 for (k = 0; k < PER_CUBE_INDICES; k++) {
                     if (withFullIndices) {

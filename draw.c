@@ -48,7 +48,7 @@ void initObjects() {
 
     sun = geObjectInit();
     sun->shape = shapes + GE_CUBE;
-    sun->texture = tex[4];
+    sun->texture = tex[GE_TEXTURE_YELLOW];
     sun->size.x = sun->size.y = sun->size.z = 30;
     sun->pos = lightPoint;
     sun->exemptFromViewTranslation = true;
@@ -60,7 +60,7 @@ void initObjects() {
 
     sky = geObjectInit();
     sky->shape = shapes + GE_CUBE_INVERTED;
-    sky->texture = tex[5];
+    sky->texture = tex[GE_TEXTURE_SKY];
     sky->size.x = sky->size.y = sky->size.z = 500;
     sky->pos.y = -10;
     sky->glTextureType = GL_TEXTURE_CUBE_MAP;
@@ -70,7 +70,7 @@ void initObjects() {
 
     shadowMap = geObjectInit();
     shadowMap->shape = shapes + GE_SQUARE;
-    shadowMap->texture = tex[10];
+    shadowMap->texture = tex[GE_TEXTURE_SHADOW_MAP_512];
     shadowMap->size.x = shadowMap->size.y = 4;
     shadowMap->pos.y = 2;
     shadowMap->pos.x = -2;
@@ -79,7 +79,7 @@ void initObjects() {
     highlight = geObjectInit();
     highlight->shape = shapes + GE_CUBE;
     highlight->size.x = highlight->size.y = highlight->size.z = 1.01f;
-    highlight->texture = tex[7];
+    highlight->texture = tex[GE_TEXTURE_GRAY_TRANSPARENT];
     highlight->extraBrightness = 1.0f;
 
 //    vertexWorldDumb = geObjectInit();
@@ -106,7 +106,7 @@ void initObjects() {
 
 
     crosshair = geObjectInit();
-    crosshair->texture = tex[3];
+    crosshair->texture = tex[GE_TEXTURE_WHITE];
     crosshair->shape = shapes + GE_2D_CROSSHAIR;
     crosshair->exemptFromView = true;
     crosshair->extraBrightness = 1.0f;
@@ -117,27 +117,29 @@ void initObjects() {
     geShapeBuffer(&worldsSecondary[0].shape);
     worldsSecondary[0].object = geObjectInit();
     worldsSecondary[0].object->shape = &worldsSecondary[0].shape;
-    worldsSecondary[0].object->texture = tex[12];
+    worldsSecondary[0].object->texture = tex[GE_TEXTURE_COBBLE_2];
     worldsSecondary[0].object->pos.x = 51;
 
     worldsSecondary[1] = geWorldInit(GE_ALGORITHM_CULLED, 50, 32, 50);
     geShapeBuffer(&worldsSecondary[1].shape);
     worldsSecondary[1].object = geObjectInit();
     worldsSecondary[1].object->shape = &worldsSecondary[1].shape;
-    worldsSecondary[1].object->texture = tex[12];
+    worldsSecondary[1].object->texture = tex[GE_TEXTURE_COBBLE];
     worldsSecondary[1].object->pos.z = 51;
 
     worldMain = geWorldInit(GE_ALGORITHM_GREEDY, 50, 32, 50);
     geShapeBuffer(&worldMain.shape);
     worldMain.object = geObjectInit();
     worldMain.object->shape = &worldMain.shape;
-    worldMain.object->texture = tex[12];
+    worldMain.object->texture = tex[GE_TEXTURE_ATLAS];
+    worldMain.object->glTextureType = GL_TEXTURE_2D_ARRAY;
+    worldMain.object->glTextureId = GL_TEXTURE2;
 
     linePointer = geObjectInit();
     linePointer->shape = shapes + GE_LINE;
     linePointer->size.x = linePointer->size.y = linePointer->size.z = 20;
     linePointer->extraBrightness = 1.0f;
-    linePointer->texture = tex[1];
+    linePointer->texture = tex[GE_TEXTURE_RED];
 
     // <editor-fold> UNUSED USEFUL OBJECTS
 //    for (i = 512; i < 612; i++) {
@@ -349,33 +351,36 @@ void initScene() {
 
     SDL_Surface* grass = getTexture("../res/grass.jpg");
     unsigned char* pixelsGrass = cubifyTexture(grass->pixels, grass->w, grass->h);;
-    loadTextureRaw(tex + 0, pixelsGrass, grass->w * 4, grass->h * 3, GL_RGB);
+    loadTextureRaw(tex + GE_TEXTURE_GRASS_CUBIC, pixelsGrass, grass->w * 4, grass->h * 3, GL_RGB);
     SDL_FreeSurface(grass);
     free(pixelsGrass);
 
-    loadTextureRaw(tex + 1, pixelsRed, 1, 1, GL_RGB);
-    loadTextureRaw(tex + 2, pixelsBlue, 1, 1, GL_RGB);
-    loadTextureRaw(tex + 3, pixelsWhite, 1, 1, GL_RGB);
-    loadTextureRaw(tex + 4, pixelsYellow, 1, 1, GL_RGB);
-    loadTextureCubeMap(tex + 5, "../res/sky4.png");
-    loadTexture(tex + 6, "../res/grass.jpg");
-    loadTextureRaw(tex + 7, pixelsGrayTransparent, 1, 1, GL_RGBA);
-    loadTexture(tex + 8, "../res/button.png");
+    loadTextureRaw(tex + GE_TEXTURE_RED, pixelsRed, 1, 1, GL_RGB);
+    loadTextureRaw(tex + GE_TEXTURE_BLUE, pixelsBlue, 1, 1, GL_RGB);
+    loadTextureRaw(tex + GE_TEXTURE_WHITE, pixelsWhite, 1, 1, GL_RGB);
+    loadTextureRaw(tex + GE_TEXTURE_YELLOW, pixelsYellow, 1, 1, GL_RGB);
+    loadTextureCubeMap(tex + GE_TEXTURE_SKY, "../res/sky4.png");
+    loadTexture(tex + GE_TEXTURE_GRASS, "../res/grass.jpg");
+    loadTextureRaw(tex + GE_TEXTURE_GRAY_TRANSPARENT, pixelsGrayTransparent, 1, 1, GL_RGBA);
+    loadTexture(tex + GE_TEXTURE_BUTTON, "../res/button.png");
 
-    glGenTextures(1, tex + 9);
-    glBindTexture(GL_TEXTURE_2D, tex[9]);
+    glGenTextures(1, tex + GE_TEXTURE_SHADOW_MAP_512);
+    glBindTexture(GL_TEXTURE_2D, tex[GE_TEXTURE_SHADOW_MAP_512]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glGenTextures(1, tex + 10);
-    glBindTexture(GL_TEXTURE_2D, tex[10]);
+    glGenTextures(1, tex + GE_TEXTURE_SHADOW_MAP_16384);
+    glBindTexture(GL_TEXTURE_2D, tex[GE_TEXTURE_SHADOW_MAP_16384]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 16384, 16384, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    loadTexture(tex + 11, "../res/cobble.png");
-    loadTexture(tex + 12, "../res/cobble2.png");
+    loadTexture(tex + GE_TEXTURE_COBBLE, "../res/cobble.png");
+    loadTexture(tex + GE_TEXTURE_COBBLE_2, "../res/cobble2.png");
+    loadTexture(tex + GE_TEXTURE_CONTAINER, "../res/container2.png");
+
+    loadTexture3D(tex + GE_TEXTURE_ATLAS, "../res/atlas.png");
 
     initObjects();
 
@@ -440,6 +445,7 @@ void drawScene() {
         glActiveTexture(obj->glTextureId);
         glBindTexture(obj->glTextureType, obj->texture);
         glUniform1i(_U(useCubeMap), obj->glTextureType == GL_TEXTURE_CUBE_MAP);
+        glUniform1i(_U(useAtlas), obj->glTextureType == GL_TEXTURE_2D_ARRAY);
 
         kmMat4 rot, scale, translation;
         if (i == 721) {

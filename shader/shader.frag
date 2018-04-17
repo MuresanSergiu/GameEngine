@@ -4,6 +4,7 @@ layout (location = 10) uniform bool exemptFromViewTranslation;
 layout (location = 11) uniform bool useCubeMap;
 layout (location = 12) uniform bool exemptFromViewProjection;
 uniform bool exemptFromView;
+uniform bool useAtlas;
 
 layout(location = 100) uniform vec3 _mouseOutColor;
 layout(location = 101) uniform vec4 lightAmbient;
@@ -16,6 +17,7 @@ layout(location = 107) uniform float extraBrightness;
 layout(location = 110) uniform sampler2D tex;
 layout(location = 111) uniform samplerCube texCube;
 layout(location = 112) uniform sampler2D shadow;
+uniform sampler2DArray texAtlas;
 
 layout(location = 500) uniform float specularPower;
 
@@ -66,6 +68,8 @@ void main(void) {
     vec4 texturedFragment;
     if (useCubeMap) {
         texturedFragment = texture(texCube, FragVertexPos);
+    } else if (useAtlas) {
+        texturedFragment = texture(texAtlas, FragTexCoords);
     } else {
         texturedFragment = texture(tex, vec2(FragTexCoords));
     }

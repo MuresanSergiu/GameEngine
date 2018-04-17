@@ -18,7 +18,7 @@ SDL_Surface* getTexture(const char* path) {
 }
 
 void loadTexture(GLuint* tOut, const char* path) {
-    SDL_Surface * data = getTexture(path);
+    SDL_Surface* data = getTexture(path);
     if (!data) return;
     //printf("%i %i\n", data->h, data->w);
     GLenum format;
@@ -28,6 +28,46 @@ void loadTexture(GLuint* tOut, const char* path) {
         format = GL_RGBA;
     }
     loadTextureRaw(tOut, data->pixels, data->w, data->h, format);
+    SDL_FreeSurface(data);
+}
+
+void loadTexture3D(GLuint* tOut, const char* pathAtlas) {
+    size_t i, j, d = 0, k1;
+    SDL_Surface* data = getTexture(pathAtlas);
+    char* pixels = malloc((size_t) (512 * 512 * data->format->BytesPerPixel));
+
+    glActiveTexture(GL_TEXTURE2);
+    glGenTextures(1, tOut);
+
+    glBindTexture(GL_TEXTURE_2D_ARRAY, *tOut);
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, data->format->BytesPerPixel == 3 ? GL_RGB8 : GL_RGBA8, 512, 512, 64);
+
+    for (i = 0; i < 4096; i += 512) {
+        for (j = 0; j < 4096; j += 512) {
+            for (k1 = 0; k1 < 512; k1++) {
+                memcpy(pixels + k1 * 512 * data->format->BytesPerPixel, data->pixels + (i * 4096 + (j % 4096) + k1 * 4096) * data->format->BytesPerPixel, (size_t) (512 * data->format->BytesPerPixel));
+            }
+//            for (k1 = 0; k1 < 512 * 512; k1++) {
+//                unsigned int p1 = (unsigned int) *((char*)data->pixels + k1 * data->format->BytesPerPixel);
+//                unsigned int p2 = (unsigned int) *((char*)data->pixels + k1 * data->format->BytesPerPixel + 1);
+//                unsigned int p3 = (unsigned int) *((char*)data->pixels + k1 * data->format->BytesPerPixel + 2);
+//                printf("( %u %u %u ), ", p1, p2, p3);
+//                if (k1 % 8 == 0) printf("\n");
+//            }
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, (GLint) d++, 512, 512, 1, data->format->BytesPerPixel == 3 ? GL_RGB : GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        }
+    }
+
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glUniform1i(_U(texAtlas), 2);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+    free(pixels);
     SDL_FreeSurface(data);
 }
 

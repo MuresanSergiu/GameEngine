@@ -18,9 +18,18 @@ SDL_GLContext* context = NULL;
 #define SCREEN_HEIGHT 900
 #define SCREEN_WIDTH 1600
 
-//void DebugCallbackARB(GLenum source​, GLenum type​, GLuint id​, GLenum severity​, GLsizei length​, const GLchar* message​, const GLvoid* userParam​) {
-//
-//}
+void MessageCallback( GLenum source,
+                      GLenum type,
+                      GLuint id,
+                      GLenum severity,
+                      GLsizei length,
+                      const GLchar* message,
+                      const void* userParam )
+{
+    fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+             ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+             type, severity, message );
+}
 
 void initGL() {
     glewExperimental = true;
@@ -28,8 +37,12 @@ void initGL() {
     if (glDebugMessageCallbackARB != NULL) {
         printf("Hooray!\n");
     }
+//    glEnable(GL_DEBUG_OUTPUT);
+//    glDebugMessageCallback((GLDEBUGPROC)MessageCallback, 0);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+//    glEnable(GL_BLEND);
+//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) {
@@ -191,8 +204,8 @@ int main(int argc, char** argv) {
             }
         }
         SDL_GL_SwapWindow(window);
-        renderMirror();
-        renderShadowMap();
+//        renderMirror();
+//        renderShadowMap();
 
         glUseProgram(programs[GE_PROGRAM_MAIN]);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
