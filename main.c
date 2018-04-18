@@ -135,10 +135,24 @@ void updateMouseHandles(int x, int y) {
             SDL_SetRelativeMouseMode(SDL_TRUE);
             glUniform3f(_U(_mouseOutColor), 0, 0, 0);
         } else {
-            kmVec3 raycast = geCameraRaycast(&cameraMain);
+            kmVec3 raycast = geCameraRaycast(&cameraMain, &worldMain);
             if (raycast.x != -1 && raycast.y != -1 && raycast.z != -1) {
                 geWorldRemoveBlock(&worldMain, &raycast);
                 geShapeBuffer(&worldMain.shape);
+            } else {
+                raycast = geCameraRaycast(&cameraMain, &worldsSecondary[0]);
+                if (raycast.x != -1 && raycast.y != -1 && raycast.z != -1) {
+                    kmVec3Subtract(&raycast, &raycast, &worldsSecondary[0].object->pos);
+                    geWorldRemoveBlock(&worldsSecondary[0], &raycast);
+                    geShapeBuffer(&worldsSecondary[0].shape);
+                } else {
+                    raycast = geCameraRaycast(&cameraMain, &worldsSecondary[1]);
+                    if (raycast.x != -1 && raycast.y != -1 && raycast.z != -1) {
+                        kmVec3Subtract(&raycast, &raycast, &worldsSecondary[1].object->pos);
+                        geWorldRemoveBlock(&worldsSecondary[1], &raycast);
+                        geShapeBuffer(&worldsSecondary[1].shape);
+                    }
+                }
             }
         }
     }

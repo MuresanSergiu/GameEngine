@@ -124,7 +124,7 @@ void initObjects() {
     geShapeBuffer(&worldsSecondary[1].shape);
     worldsSecondary[1].object = geObjectInit();
     worldsSecondary[1].object->shape = &worldsSecondary[1].shape;
-    worldsSecondary[1].object->texture = tex[GE_TEXTURE_COBBLE];
+    worldsSecondary[1].object->texture = tex[GE_TEXTURE_COBBLE_2];
     worldsSecondary[1].object->pos.z = 51;
 
     worldMain = geWorldInit(GE_ALGORITHM_GREEDY, 50, 32, 50);
@@ -398,7 +398,13 @@ void initScene() {
 void update() {
     geCameraUpdate(&cameraMain);
 
-    kmVec3 raycastResult = geCameraRaycast(&cameraMain);
+    kmVec3 raycastResult = geCameraRaycast(&cameraMain, &worldMain);
+    if (raycastResult.x == -1) {
+        raycastResult = geCameraRaycast(&cameraMain, &worldsSecondary[0]);
+    }
+    if (raycastResult.x == -1) {
+        raycastResult = geCameraRaycast(&cameraMain, &worldsSecondary[1]);
+    }
     memcpy(&highlight->pos, &raycastResult, sizeof(kmVec3));
 
     // Update lights

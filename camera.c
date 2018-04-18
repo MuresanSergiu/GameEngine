@@ -35,15 +35,17 @@ void geCameraUpdate(geCamera* camera) {
     glUniform3fv(_U(pl) + 1, 1, (const GLfloat *) &camera->pos);
 }
 
-kmVec3 geCameraRaycast(geCamera* camera) {
+kmVec3 geCameraRaycast(geCamera* camera, geWorld* world) {
     size_t i;
     kmVec3 pos = camera->pos;
+    kmVec3Subtract(&pos, &pos, &world->object->pos);
     kmVec3 dir;
     kmVec3Scale(&dir, &camera->direction, 0.01f);
     kmVec3 block = { -1, -1, -1 };
     for (i = 0; i < 1500; i++) {
-        block = geWorldFind(&worldMain, &pos);
+        block = geWorldFind(world, &pos);
         if (block.x != -1 && block.y != -1 && block.z != -1) {
+            kmVec3Add(&block, &block, &world->object->pos);
             return block;
         }
         kmVec3Add(&pos, &pos, &dir);

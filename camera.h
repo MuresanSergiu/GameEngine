@@ -10,7 +10,7 @@
 geCamera cameraMain;
 
 void geCameraUpdate(geCamera* camera);
-kmVec3 geCameraRaycast(geCamera* camera);
+kmVec3 geCameraRaycast(geCamera* camera, geWorld* world);
 //kmVec3 cameraRight();
 
 
