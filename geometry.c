@@ -824,9 +824,14 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
 
     for (oX = 0; oX < world->sizeX; oX++) {
         for (oZ = 0; oZ < world->sizeZ; oZ++) {
+            long long up = (long long)((sdnoise2(oX, oZ, NULL, NULL) + 1) * 2.5f) + (long long)(world->sizeY * 0.5f);
             for (oY = 0; oY < world->sizeY; oY++) {
                 if (world->map[oX][oZ][oY] == 0) {
                     continue;
+                }
+                float textureIndex = 1;
+                if (up-- < 0) {
+                    textureIndex = 2;
                 }
                 for (k = 0; k < PER_CUBE_VERTICES; k++) {
                     geVertex* vertexBlock = vertices + k;
@@ -844,7 +849,7 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
                     vertexWorld->texCoords.y = vertexBlock->texCoords.y;
                     vertexWorld->texCoords.z = vertexBlock->texCoords.z;
 
-                    vertexWorld->texCoords.z = 1;
+                    vertexWorld->texCoords.z = textureIndex;
                 }
                 for (k = 0; k < PER_CUBE_INDICES; k++) {
                     if (withFullIndices) {
@@ -1017,7 +1022,7 @@ void gePlaneCompressWithGreedy(gePlane* plane) {
         geVertex* v1 = plane->vertices + i * 4;
         geVertex* v2 = plane->vertices + i * 4;
 
-        while(i + 1 < plane->numVertices / 4 && (hashed[i + 1] == 0 && (firstOrder(v2) == firstOrder(v2 + 4) && secondOrder(v2) == secondOrder(v2 + 4) - 1))) {
+        while(i + 1 < plane->numVertices / 4 && (hashed[i + 1] == 0 && (firstOrder(v2) == firstOrder(v2 + 4) && secondOrder(v2) == secondOrder(v2 + 4) - 1) && v2->texCoords.z == (v2 + 4)->texCoords.z)) {
             hashed[i + 1] = 1;
             v2 += 4;
             i++;
@@ -1041,7 +1046,7 @@ void gePlaneCompressWithGreedy(gePlane* plane) {
                 v += 4;
             }
 
-            if (hashed[j] != 0 || secondOrder(v3) != secondOrder(v) || firstOrder(v3) != firstOrder(v) - 1) {
+            if (hashed[j] != 0 || secondOrder(v3) != secondOrder(v) || firstOrder(v3) != firstOrder(v) - 1 || v3->texCoords.z != v->texCoords.z) {
                 // Exit if there is no next element on the y for v3
                 break;
             }
@@ -1050,7 +1055,7 @@ void gePlaneCompressWithGreedy(gePlane* plane) {
             u = v;
 
             // And start searching for the new v4
-            while (j < plane->numVertices / 4 - 1 && firstOrder(v4) == firstOrder(v) - 1 && secondOrder(v4) > secondOrder(v)) {
+            while (j < plane->numVertices / 4 - 1 && firstOrder(v4) == firstOrder(v) - 1 && secondOrder(v4) > secondOrder(v) && v4->texCoords.z == v->texCoords.z) {
                 // The area between the new v3 and new v4 needs to be filled with non-hashed faces
                 // Otherwise, there's no new v4
                 if (hashed[j] != 0 || secondOrder(v) != secondOrder(v + 4) - 1) {
@@ -1061,7 +1066,7 @@ void gePlaneCompressWithGreedy(gePlane* plane) {
                 v += 4;
             }
 
-            if (hashed[j] != 0 || secondOrder(v4) != secondOrder(v) || firstOrder(v4) != firstOrder(v) - 1) {
+            if (hashed[j] != 0 || secondOrder(v4) != secondOrder(v) || firstOrder(v4) != firstOrder(v) - 1 || v4->texCoords.z != v->texCoords.z) {
                 // Exit if there is no next element on the y for v4
                 break;
             }
