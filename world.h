@@ -17,5 +17,6 @@ void geWorldGenerate(geWorld* world, size_t baseHeight, size_t heightOffsetIntes
 void geWorldDestroy(geWorld* world);
 kmVec3 geWorldFind(geWorld* world, kmVec3* v);
 void geWorldRemoveBlock(geWorld* world, kmVec3* v);
+void geWorldCopyPlanes(geWorld* world);
 
 #endif //GAMEENGINE_WORLD_H

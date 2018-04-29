@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 project(GameEngine)
 
 set(CMAKE_C_STANDARD 11)
-set(SOURCE_FILES main.c shader.c shader.h utils.c utils.h draw.c draw.h types.h camera.c camera.h texture.c texture.h geometry.c geometry.h framebuffer.c framebuffer.h simplex_noise.c simplex_noise.h gui.c gui.h world.c world.h)
+set(SOURCE_FILES main.c shader.c shader.h utils.c utils.h draw.c draw.h types.h camera.c camera.h texture.c texture.h geometry.c geometry.h framebuffer.c framebuffer.h simplex_noise.c simplex_noise.h gui.c gui.h world.c world.h test.c test.h)
 
 include(FindPkgConfig)
 

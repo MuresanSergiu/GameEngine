@@ -347,7 +347,7 @@ void initScene() {
     unsigned char pixelsBlue[] = { 0, 0, 140 };
     unsigned char pixelsWhite[] = { 255, 255, 255 };
     unsigned char pixelsYellow[] = { 255, 200, 0 };
-    unsigned char pixelsGrayTransparent[] = { 128, 128, 128, 128 };
+    unsigned char pixelsGrayTransparent[] = { 64, 64, 64, 128 };
 
     SDL_Surface* grass = getTexture("../res/grass.jpg");
     unsigned char* pixelsGrass = cubifyTexture(grass->pixels, grass->w, grass->h);;

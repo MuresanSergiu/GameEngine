@@ -5,6 +5,11 @@
 //    vec3 position;
 //    vec3 normal;
 //};
+// THIS DOES WORK
+//struct geVertex {
+//    vec3 position;
+//    vec3 normal;
+//} vert;
 //layout (location = 0) in geVertex data;
 
 layout (location = 0) in vec3 position;

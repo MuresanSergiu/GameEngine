@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <_timeval.h>
+#include <mem.h>
 #include "simplex_noise.h"
 #include "utils.h"
 
@@ -125,4 +126,47 @@ float perlinNoise(unsigned long long x, unsigned long long y, int octaves, float
     }
 
     return noise / ampAccumulated;
+}
+
+// Given a face gets the coordinate of the plane in which it resides
+float planeCoordinate(geVertex* v) {
+    if (v->normal.z == 1) { // front
+        return v->pos.z;
+    } else if (v->normal.z == -1) { // back
+        return v->pos.z;
+    } else if (v->normal.x == -1) { // left
+        return v->pos.x;
+    } else if (v->normal.x == 1) { // right
+        return v->pos.x;
+    } else if (v->normal.y == 1) { // top
+        return v->pos.y;
+    } else if (v->normal.y == -1) { // bottom
+        return v->pos.y;
+    } else {
+#ifdef DEBUG_GREEDY
+        fprintf(stdout, "Could not find a proper side for quad: \n");
+        printVec3(&v->pos);
+#endif
+        return 0;
+    }
+}
+
+// Given a shape removes a face
+void removeFace(gePlane* plane, size_t offsetVertex, size_t offsetIndex, size_t numFaces) {
+    size_t k;
+    memcpy(
+            plane->vertices + offsetVertex,
+            plane->vertices + (offsetVertex + 4 * numFaces),
+            sizeof(geVertex) * (plane->numVertices - (offsetVertex + 4 * numFaces))
+    );
+    memcpy(
+            plane->indices + offsetIndex,
+            plane->indices + (offsetIndex + 6 * numFaces),
+            sizeof(GLuint) * (plane->numIndices - (offsetIndex + 6 * numFaces))
+    );
+//    for (k = offsetIndex; k < plane->numIndices; k++) {
+//        plane->indices[k] -= (4 * numFaces);
+//    }
+    plane->numVertices -= (4 * numFaces);
+    plane->numIndices -= (6 * numFaces);
 }

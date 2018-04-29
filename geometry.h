@@ -38,11 +38,6 @@ geShape createTetrahedron();
 geShape createTrigTerrain(unsigned long long tess);
 geShape createLineNormals(geShape* shape);
 geShape createNoiseTerrain(unsigned long long tess);
-void geWorldGenerateShape(geWorld* world, bool withFullIndices);
-void geWorldGenerateCulledPlanes(geWorld* world);
-void geWorldShapeFromPlanes(geWorld* world);
-void geWorldCompressCulledPlanesWithGreedy(geWorld* world);
-void gePlaneCompressWithGreedy(gePlane* plane);
 geShape create3DCrossHair();
 geShape create2DCrossHair();
 

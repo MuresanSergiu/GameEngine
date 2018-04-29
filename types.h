@@ -72,6 +72,7 @@ typedef struct geWorld {
     geObject* object;
     geShape shape;
 
+    gePlane* planesUncompressed[6];
     gePlane* planes[6];
     size_t numPlanes[6];
 } geWorld;
