@@ -56,10 +56,7 @@ typedef struct geCamera {
 
 typedef struct gePlane {
     geVertex* vertices;
-    GLuint* indices;
-
     unsigned long long numVertices;
-    unsigned long long numIndices;
 } gePlane;
 
 typedef struct geWorld {

@@ -152,21 +152,15 @@ float planeCoordinate(geVertex* v) {
 }
 
 // Given a shape removes a face
-void removeFace(gePlane* plane, size_t offsetVertex, size_t offsetIndex, size_t numFaces) {
+void removeFace(gePlane* plane, size_t offsetVertex, size_t numFaces) {
     size_t k;
     memcpy(
             plane->vertices + offsetVertex,
             plane->vertices + (offsetVertex + 4 * numFaces),
             sizeof(geVertex) * (plane->numVertices - (offsetVertex + 4 * numFaces))
     );
-    memcpy(
-            plane->indices + offsetIndex,
-            plane->indices + (offsetIndex + 6 * numFaces),
-            sizeof(GLuint) * (plane->numIndices - (offsetIndex + 6 * numFaces))
-    );
 //    for (k = offsetIndex; k < plane->numIndices; k++) {
 //        plane->indices[k] -= (4 * numFaces);
 //    }
     plane->numVertices -= (4 * numFaces);
-    plane->numIndices -= (6 * numFaces);
 }
