@@ -68,13 +68,13 @@ void initObjects() {
     sky->exemptFromViewTranslation = true;
     sky->extraBrightness = 1;
 
-    shadowMap = geObjectInit();
-    shadowMap->shape = shapes + GE_SQUARE;
-    shadowMap->texture = tex[GE_TEXTURE_SHADOW_MAP_512];
-    shadowMap->size.x = shadowMap->size.y = 4;
-    shadowMap->pos.y = 2;
-    shadowMap->pos.x = -2;
-    shadowMap->pos.z = 5;
+//    shadowMap = geObjectInit();
+//    shadowMap->shape = shapes + GE_SQUARE;
+//    shadowMap->texture = tex[GE_TEXTURE_SHADOW_MAP_512];
+//    shadowMap->size.x = shadowMap->size.y = 4;
+//    shadowMap->pos.y = 2;
+//    shadowMap->pos.x = -2;
+//    shadowMap->pos.z = 5;
 
     highlight = geObjectInit();
     highlight->shape = shapes + GE_CUBE;
@@ -113,21 +113,26 @@ void initObjects() {
     crosshair->size.x = crosshair->size.y = crosshair->size.z = 0.02f;
     crosshair->pos.z = -1;
 
-    worldsSecondary[0] = geWorldInit(GE_ALGORITHM_BASIC, 50, 32, 50);
+    worldsSecondary[0] = geWorldInit(GE_ALGORITHM_GREEDY, 100, 32, 100);
     geShapeBuffer(&worldsSecondary[0].shape);
     worldsSecondary[0].object = geObjectInit();
     worldsSecondary[0].object->shape = &worldsSecondary[0].shape;
-    worldsSecondary[0].object->texture = tex[GE_TEXTURE_COBBLE_2];
-    worldsSecondary[0].object->pos.x = 51;
+    worldsSecondary[0].object->texture = tex[GE_TEXTURE_ATLAS];
+    worldsSecondary[0].object->glTextureType = GL_TEXTURE_2D_ARRAY;
+    worldsSecondary[0].object->glTextureId = GL_TEXTURE2;
+    worldsSecondary[0].object->pos.x = 60;
+    worldsSecondary[0].object->pos.z = -60;
 
-    worldsSecondary[1] = geWorldInit(GE_ALGORITHM_CULLED, 50, 32, 50);
+    worldsSecondary[1] = geWorldInit(GE_ALGORITHM_GREEDY, 50, 32, 50);
     geShapeBuffer(&worldsSecondary[1].shape);
     worldsSecondary[1].object = geObjectInit();
     worldsSecondary[1].object->shape = &worldsSecondary[1].shape;
-    worldsSecondary[1].object->texture = tex[GE_TEXTURE_COBBLE_2];
-    worldsSecondary[1].object->pos.z = 51;
+    worldsSecondary[1].object->texture = tex[GE_TEXTURE_ATLAS];
+    worldsSecondary[1].object->glTextureType = GL_TEXTURE_2D_ARRAY;
+    worldsSecondary[1].object->glTextureId = GL_TEXTURE2;
+    worldsSecondary[1].object->pos.z = 60;
 
-    worldMain = geWorldInit(GE_ALGORITHM_GREEDY, 50, 32, 50);
+    worldMain = geWorldInit(GE_ALGORITHM_BASIC, 10, 32, 10);
     geShapeBuffer(&worldMain.shape);
     worldMain.object = geObjectInit();
     worldMain.object->shape = &worldMain.shape;
@@ -135,11 +140,11 @@ void initObjects() {
     worldMain.object->glTextureType = GL_TEXTURE_2D_ARRAY;
     worldMain.object->glTextureId = GL_TEXTURE2;
 
-    linePointer = geObjectInit();
-    linePointer->shape = shapes + GE_LINE;
-    linePointer->size.x = linePointer->size.y = linePointer->size.z = 20;
-    linePointer->extraBrightness = 1.0f;
-    linePointer->texture = tex[GE_TEXTURE_RED];
+//    linePointer = geObjectInit();
+//    linePointer->shape = shapes + GE_LINE;
+//    linePointer->size.x = linePointer->size.y = linePointer->size.z = 20;
+//    linePointer->extraBrightness = 1.0f;
+//    linePointer->texture = tex[GE_TEXTURE_RED];
 
     // <editor-fold> UNUSED USEFUL OBJECTS
 //    for (i = 512; i < 612; i++) {
@@ -405,6 +410,15 @@ void update() {
     if (raycastResult.x == -1) {
         raycastResult = geCameraRaycast(&cameraMain, &worldsSecondary[1]);
     }
+    if (raycastResult.x == -1) {
+        highlight->size.x = 0;
+        highlight->size.y = 0;
+        highlight->size.z = 0;
+    } else {
+        highlight->size.x = 1.01f;
+        highlight->size.y = 1.01f;
+        highlight->size.z = 1.01f;
+    }
     memcpy(&highlight->pos, &raycastResult, sizeof(kmVec3));
 
     // Update lights
@@ -442,6 +456,9 @@ void drawScene() {
     size_t i;
     for (i = 0; i < numObjects; i++) {
         geObject* obj = objects + i;
+        if (obj == highlight && programs[GE_PROGRAM_WIREFRAME] < programs[GE_PROGRAM_MAIN]) {
+            continue;
+        }
 
         glUniform1i(_U(exemptFromView), obj->exemptFromView);
         glUniform1i(_U(exemptFromViewTranslation), obj->exemptFromViewTranslation);
@@ -463,7 +480,6 @@ void drawScene() {
             kmMat4Identity(&rot);
             glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
         }
-
         geObjectDraw(obj);
     }
 }

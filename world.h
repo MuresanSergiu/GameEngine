@@ -18,5 +18,7 @@ void geWorldDestroy(geWorld* world);
 kmVec3 geWorldFind(geWorld* world, kmVec3* v);
 void geWorldRemoveBlock(geWorld* world, kmVec3* v);
 void geWorldCopyPlanes(geWorld* world);
+void geWorldCopyPlanesWithOrientation(geWorld* world, uint8_t orientation);
+geWorld geWorldInitCustom(ALGORITHM algorithm, uint8_t orientation);
 
 #endif //GAMEENGINE_WORLD_H

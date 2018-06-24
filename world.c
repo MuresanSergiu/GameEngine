@@ -82,7 +82,7 @@ gePlane* addFaceInOrderedPlane(geVertex* vertices, GLuint* indices, gePlane* pla
     // Create it if it doesn't exist
     if (destination == NULL) {
         destination = planes + *numPlanes;
-        destination->vertices = calloc(8192 * 4, sizeof(geVertex));
+        destination->vertices = calloc(8192 * 40, sizeof(geVertex));
         (*numPlanes)++;
     }
 
@@ -108,37 +108,39 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
     size_t oX, oY, oZ;
     size_t currentBlockIndex = 0;
 
+    float s0 = size / 2;
+
     geVertex vertices[] = {
             // FRONT
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 0}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 0.0f,  1.0f }, {0, 1}},
+            {{ x - s0, y - s0, z + s0 }, { 0.0f, 0.0f,  1.0f }, {0, 0}},
+            {{ x + s0, y - s0, z + s0 }, { 0.0f, 0.0f,  1.0f }, {1, 0}},
+            {{ x + s0, y + s0, z + s0 }, { 0.0f, 0.0f,  1.0f }, {1, 1}},
+            {{ x - s0, y + s0, z + s0 }, { 0.0f, 0.0f,  1.0f }, {0, 1}},
             // BACK
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 0}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 0}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {0, 1}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 0.0f, -1.0f }, {1, 1}},
+            {{ x - s0, y - s0, z - s0 }, { 0.0f, 0.0f, -1.0f }, {1, 0}},
+            {{ x + s0, y - s0, z - s0 }, { 0.0f, 0.0f, -1.0f }, {0, 0}},
+            {{ x + s0, y + s0, z - s0 }, { 0.0f, 0.0f, -1.0f }, {0, 1}},
+            {{ x - s0, y + s0, z - s0 }, { 0.0f, 0.0f, -1.0f }, {1, 1}},
             // LEFT
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1}},
+            {{ x - s0, y - s0, z - s0 }, { -1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x - s0, y - s0, z + s0 }, { -1.0f, 0.0f, 0.0f }, {1, 0}},
+            {{ x - s0, y + s0, z + s0 }, { -1.0f, 0.0f, 0.0f }, {1, 1}},
+            {{ x - s0, y + s0, z - s0 }, { -1.0f, 0.0f, 0.0f }, {0, 1}},
             // RIGHT
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1}},
+            {{ x + s0, y - s0, z - s0 }, { 1.0f, 0.0f, 0.0f }, {1, 0}},
+            {{ x + s0, y - s0, z + s0 }, { 1.0f, 0.0f, 0.0f }, {0, 0}},
+            {{ x + s0, y + s0, z + s0 }, { 1.0f, 0.0f, 0.0f }, {0, 1}},
+            {{ x + s0, y + s0, z - s0 }, { 1.0f, 0.0f, 0.0f }, {1, 1}},
             // TOP
-            {{ x - size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0}},
-            {{ x + size / 2, y + size / 2, z - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0}},
-            {{ x + size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1}},
-            {{ x - size / 2, y + size / 2, z + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1}},
+            {{ x - s0, y + s0, z - s0 }, { 0.0f, 1.0f, 0.0f }, {0, 0}},
+            {{ x + s0, y + s0, z - s0 }, { 0.0f, 1.0f, 0.0f }, {1, 0}},
+            {{ x + s0, y + s0, z + s0 }, { 0.0f, 1.0f, 0.0f }, {1, 1}},
+            {{ x - s0, y + s0, z + s0 }, { 0.0f, 1.0f, 0.0f }, {0, 1}},
             // BOTTOM
-            {{ x - size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0}},
-            {{ x + size / 2, y - size / 2, z - size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0}},
-            {{ x + size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1}},
-            {{ x - size / 2, y - size / 2, z + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1}},
+            {{ x - s0, y - s0, z - s0 }, { 0.0f, -1.0f, 0.0f }, {0, 0}},
+            {{ x + s0, y - s0, z - s0 }, { 0.0f, -1.0f, 0.0f }, {1, 0}},
+            {{ x + s0, y - s0, z + s0 }, { 0.0f, -1.0f, 0.0f }, {1, 1}},
+            {{ x - s0, y - s0, z + s0 }, { 0.0f, -1.0f, 0.0f }, {0, 1}},
     };
 
     GLuint indices[] = {
@@ -219,6 +221,8 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
     printf("---------------- BASIC MESH ----------------------\n");
     TIME_END("generating basic mesh");
     printf("Total vertices and indices: %llu, %llu\n", world->shape.numVertices, world->shape.numIndices);
+    printf("Total number of blocks: %llu\n", world->numBlocks);
+    printf("World size: (%llu, %llu, %llu)\n", world->sizeX, world->sizeY, world->sizeZ);
     if (withFullIndices) {
         printf("\n");
     }
@@ -402,6 +406,15 @@ void geWorldGenerateCulledPlanes(geWorld* world) {
 //    }
     printf("---------------- CULLED MESH ----------------------\n");
     TIME_END("culling and sorting voxel world");
+    size_t numVertices = 0, numPlanes = 0;
+    for (k = 0; k < 6; k++) {
+        for (l = 0; l < world->numPlanes[k]; l++) {
+            numVertices += world->planesUncompressed[k][l].numVertices;
+        }
+        numPlanes += world->numPlanes[k];
+    }
+    printf("Total number of vertices: %llu\n", numVertices);
+    printf("Total number of planes: %llu\n", numPlanes);
 }
 
 void geWorldCompressCulledPlanesWithGreedy(geWorld* world) {
@@ -412,7 +425,9 @@ void geWorldCompressCulledPlanesWithGreedy(geWorld* world) {
 #ifdef DEBUG_GREEDY
             size_t numIndicesBefore = plane->numIndices, numVerticesBefore = plane->numVertices;
 #endif
-            gePlaneCompressWithGreedy(&world->planes[k][l]);
+            if (world->planes[k] != NULL) {
+                gePlaneCompressWithGreedy(&world->planes[k][l]);
+            }
 #ifdef DEBUG_GREEDY
             fprintf(stdout, "%llu) Before %llu, %llu and after %llu, %llu\n", k, numVerticesBefore, numIndicesBefore, plane->numVertices, plane->numIndices);
 #endif
@@ -420,6 +435,15 @@ void geWorldCompressCulledPlanesWithGreedy(geWorld* world) {
     }
     printf("---------------- GREEDY MESH ----------------------\n");
     TIME_END("greedy");
+    size_t numVertices = 0, numPlanes = 0;
+    for (k = 0; k < 6; k++) {
+        for (l = 0; l < world->numPlanes[k]; l++) {
+            numVertices += world->planes[k][l].numVertices;
+        }
+        numPlanes += world->numPlanes[k];
+    }
+    printf("Total number of vertices: %llu\n", numVertices);
+    printf("Total number of planes: %llu\n", numPlanes);
 }
 
 void geWorldShapeFromPlanes(geWorld* world) {
@@ -438,6 +462,9 @@ void geWorldShapeFromPlanes(geWorld* world) {
             indices[4] = 1;
         }
         for (l = 0; l < world->numPlanes[k]; l++) {
+            if (world->planes[k] == NULL) {
+                continue;
+            }
             gePlane* plane = &world->planes[k][l];
 //            for (j = 0; j < plane->numVertices / 4; j++) {
 //                plane->indices[j * 6] += indexOffset;
@@ -498,7 +525,77 @@ geWorld geWorldInit(ALGORITHM algorithm, size_t sizeX, size_t sizeY, size_t size
         }
     }
 
-    geWorldGenerate(&world, world.sizeY / 2, world.sizeY / 2);
+    geWorldGenerate(&world, 2 * world.sizeY / 3, world.sizeY / 3);
+
+//    size_t i;
+//    for (i = 0; i < world.numPlanes[4]; i++) {
+//        printf("Number of faces on culled top plane with coordinate y = %f is %llu\n", world.planesUncompressed[4][i].vertices[0].pos.y, world.planesUncompressed[4][i].numVertices / 4);
+//    }
+//    for (i = 0; i < world.numPlanes[4]; i++) {
+//        printf("Number of faces on greedied top plane with coordinate y = %f is %llu\n", world.planes[4][i].vertices[0].pos.y, world.planes[4][i].numVertices / 4);
+//    }
+//    for (i = 0; i < world.numPlanes[0]; i++) {
+//        printf("Number of faces on culled front plane with coordinate z = %f is %llu\n", world.planesUncompressed[0][i].vertices[0].pos.z, world.planesUncompressed[0][i].numVertices / 4);
+//    }
+//    for (i = 0; i < world.numPlanes[0]; i++) {
+//        printf("Number of faces on greedied front plane with coordinate z = %f is %llu\n", world.planes[0][i].vertices[0].pos.z, world.planes[0][i].numVertices / 4);
+//    }
+
+    return world;
+}
+
+geWorld geWorldInitCustom(ALGORITHM algorithm, uint8_t orientation) {
+    geWorld world = { 0 };
+
+    world.algorithm = algorithm;
+
+    // Custom L-shape
+    world.sizeX = 4;
+    world.sizeY = 4;
+    world.sizeZ = 1;
+
+    size_t oX, oZ;
+    world.map = calloc(world.sizeX, sizeof(long long*));
+    for (oX = 0; oX < world.sizeX; oX++) {
+        world.map[oX] = calloc(world.sizeZ, sizeof(long long*));
+        for (oZ = 0; oZ < world.sizeZ; oZ++) {
+            world.map[oX][oZ] = calloc(world.sizeY, sizeof(long long));
+        }
+    }
+
+    world.map[0][0][0] = 2;
+    world.map[1][0][0] = 2;
+    world.map[2][0][0] = 2;
+    world.map[2][0][1] = 2;
+    world.map[0][0][1] = 2;
+    world.map[1][0][1] = 2;
+
+    world.map[2][0][1] = 2;
+    world.map[2][0][2] = 2;
+    world.map[3][0][0] = 2;
+    world.map[3][0][1] = 2;
+    world.map[3][0][2] = 2;
+    world.numBlocks = 11;
+
+    geWorldGenerateShape(&world, world.algorithm == GE_ALGORITHM_BASIC);
+    if (world.algorithm == GE_ALGORITHM_CULLED) {
+        geWorldGenerateCulledPlanes(&world);
+        if (orientation < 6) {
+            geWorldCopyPlanesWithOrientation(&world, orientation);
+        } else {
+            geWorldCopyPlanes(&world);
+        }
+        geWorldShapeFromPlanes(&world);
+    } else if (world.algorithm == GE_ALGORITHM_GREEDY) {
+        geWorldGenerateCulledPlanes(&world);
+        if (orientation < 6) {
+            geWorldCopyPlanesWithOrientation(&world, orientation);
+        } else {
+            geWorldCopyPlanes(&world);
+        }
+        geWorldCompressCulledPlanesWithGreedy(&world);
+        geWorldShapeFromPlanes(&world);
+    }
     return world;
 }
 
@@ -529,7 +626,7 @@ void geWorldGenerate(geWorld* world, size_t baseHeight, size_t heightOffsetIntes
     for (oX = 0; oX < world->sizeX; oX++) {
         for (oZ = 0; oZ < world->sizeZ; oZ++) {
             int noise = (int)(((1 + sdnoise2(((float) oX) / 32.0f, ((float) oZ) / 32.0f, NULL, NULL)) / 2.0f) * heightOffsetIntesnsity + baseHeight);
-            long long up = (long long)((sdnoise2(oX, oZ, NULL, NULL) + 1) * 2.5f) + (long long)(world->sizeY * 0.5f);
+            long long up = (long long)((sdnoise2(((float) oX) / 8.0f, ((float) oZ) / 8.0f, NULL, NULL) + 1) * 2.5f) + (long long)(world->sizeY * 0.5f);
 
             for (oY = 0; oY < noise; oY++) {
                 if (up-- < 0) {
@@ -600,9 +697,38 @@ void geWorldCopyPlanes(geWorld* world) {
             gePlane* planeUncompressed = &world->planesUncompressed[k][l];
 
             planeCompressed->numVertices = planeUncompressed->numVertices;
-            planeCompressed->vertices = calloc(8192 * 4, sizeof(geVertex));
+            planeCompressed->vertices = calloc(8192 * 40, sizeof(geVertex));
             memcpy(planeCompressed->vertices, planeUncompressed->vertices, planeCompressed->numVertices * sizeof(geVertex));
         }
+    }
+}
+
+void geWorldCopyPlanesWithOrientation(geWorld* world, uint8_t orientation) {
+    size_t k, l;
+    for (k = 0; k < 6; k++) {
+        if (world->planes[k] == NULL) {
+            continue;
+        }
+        for (l = 0; l < world->numPlanes[k]; l++) {
+            if (world->planes[k]->vertices != NULL) {
+                free(world->planes[k][l].vertices);
+                world->planes[k][l].vertices = NULL;
+            }
+        }
+        free(world->planes[k]);
+        world->planes[k] = NULL;
+    }
+
+    world->planes[orientation] = calloc(orientation == 0 || orientation == 1 ? world->sizeZ : (orientation == 2 || orientation == 3 ? world->sizeX : world->sizeY), sizeof(gePlane));
+
+
+    for (l = 0; l < world->numPlanes[orientation]; l++) {
+        gePlane* planeCompressed = &world->planes[orientation][l];
+        gePlane* planeUncompressed = &world->planesUncompressed[orientation][l];
+
+        planeCompressed->numVertices = planeUncompressed->numVertices;
+        planeCompressed->vertices = calloc(8192 * 4, sizeof(geVertex));
+        memcpy(planeCompressed->vertices, planeUncompressed->vertices, planeCompressed->numVertices * sizeof(geVertex));
     }
 }
 
@@ -828,11 +954,13 @@ void geWorldRemoveBlock(geWorld* world, kmVec3* v) {
         return;
     }
 
-    geWorldGenerateShape(world, world->algorithm == GE_ALGORITHM_BASIC);
+
     if (world->algorithm == GE_ALGORITHM_CULLED) {
-        geWorldGenerateCulledPlanes(world);
+        geWorldRemoveBlockFromUncompressedPlanes(world, x, y, z);
+        geWorldCopyPlanes(world);
         geWorldShapeFromPlanes(world);
-    } else if (world->algorithm == GE_ALGORITHM_GREEDY) {
+    } else if (world->algorithm == GE_ALGORITHM_BASIC) {
+        geWorldGenerateShape(world, true);
 //        geWorldGenerateCulledPlanes(world);
 //        geWorldCompressCulledPlanesWithGreedy(world);
 //        geWorldShapeFromPlanes(world);

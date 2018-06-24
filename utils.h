@@ -11,12 +11,20 @@
 
 #define PI 3.14159265f
 #define STRINGIFY(X) #X
-#define TIME_START\
+#define TIME_START2\
     struct timeval tStart, tEnd;\
     gettimeofday(&tStart, NULL)
-#define TIME_END(MSG)\
+#define TIME_END2(MSG)\
     gettimeofday(&tEnd, NULL);\
     printf("Time for " MSG ": %.2lfms\n", timeDiff(tEnd, tStart))
+#define TIME_START\
+    struct timespec tStart, tEnd;\
+    clock_gettime(CLOCK_MONOTONIC, &tStart);
+#define TIME_END(MSG)\
+    clock_gettime(CLOCK_MONOTONIC, &tEnd);\
+    printf("Time for " MSG ": %lluns", ((size_t) difftime(tEnd.tv_sec, tStart.tv_sec)) * 1000000000 + tEnd.tv_nsec - tStart.tv_nsec);\
+    printf("(~%llums)\n", (((size_t) difftime(tEnd.tv_sec, tStart.tv_sec)) * 1000000000 + tEnd.tv_nsec - tStart.tv_nsec) / 1000000);
+
 
 char** readFile(char* path);
 void printFace(geVertex* v);

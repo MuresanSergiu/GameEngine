@@ -80,4 +80,5 @@ void main(void) {
     } else {
         outColor = texturedFragment * (lamount * visibility + lightAmbient + extraBrightness) + vec4(_mouseOutColor, 0);
     }
+    outColor = vec4(0, 0, 0, 1);
 }
