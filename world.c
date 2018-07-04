@@ -62,9 +62,10 @@ float secondOrder(geVertex* v) {
     }
 }
 
-// Adds a face (4x geVertex and 6x indices) inside a sorted plane
-gePlane* addFaceInOrderedPlane(geVertex* vertices, GLuint* indices, gePlane* planes, size_t* numPlanes) {
+// Adds a face (4x geVertex) inside a sorted plane
+gePlane* addFaceInOrderedPlane(geVertex* vertices, gePlane** planesPointer, size_t* numPlanes) {
     size_t i;
+    gePlane* planes = *planesPointer;
 
     // Get which plane to add the quad in
     gePlane* destination = NULL;
@@ -81,9 +82,11 @@ gePlane* addFaceInOrderedPlane(geVertex* vertices, GLuint* indices, gePlane* pla
 
     // Create it if it doesn't exist
     if (destination == NULL) {
-        destination = planes + *numPlanes;
-        destination->vertices = calloc(8192 * 40, sizeof(geVertex));
         (*numPlanes)++;
+        *planesPointer = realloc(*planesPointer, (*numPlanes) * sizeof(gePlane));
+        destination = (*planesPointer) + (*numPlanes) - 1;
+        destination->vertices = calloc(8192 * 40, sizeof(geVertex));
+        destination->numVertices = 0;
     }
 
     // Find the position at which we'll add the face
@@ -229,8 +232,12 @@ void geWorldGenerateShape(geWorld* world, bool withFullIndices) {
 }
 
 void gePlaneCompressWithGreedy(gePlane* plane) {
+    if (plane->numVertices == 0) {
+        return;
+    }
+
     size_t i;
-    size_t newNumVertices = 0, newNumIndices = 0;
+    size_t newNumVertices = 0;
 
     // Take texture coordinate diffs to expand based on the first vertex' coords
     kmVec3 diffFirstOrder, diffSecondOrder, temp;
@@ -331,10 +338,12 @@ void gePlaneCompressWithGreedy(gePlane* plane) {
     }
 
     // Reallocate to save on memory
-    if (newNumVertices == 0 || realloc(plane->vertices, newNumVertices * sizeof(geVertex)) == NULL) {
+    if (newNumVertices == 0) {
         free(plane->vertices);
         plane->vertices = NULL;
         fprintf(stderr, "Failed to reallocate vertices, deallocating\n");
+    } else {
+        plane->vertices = realloc(plane->vertices, newNumVertices * sizeof(geVertex));
     }
 
     plane->numVertices = newNumVertices;
@@ -350,8 +359,10 @@ void geWorldGenerateCulledPlanes(geWorld* world) {
     for (k = 0; k < 6; k++) {
         for (l = 0; l < world->numPlanes[k]; l++) {
             free(world->planesUncompressed[k][l].vertices);
+            world->planesUncompressed[k][l].vertices = NULL;
         }
         free(world->planesUncompressed[k]);
+        world->planesUncompressed[k] = NULL;
         world->numPlanes[k] = 0;
     }
 
@@ -390,8 +401,7 @@ void geWorldGenerateCulledPlanes(geWorld* world) {
 
                         // Add the quad to an ordered plane
                         addFaceInOrderedPlane(world->shape.vertices + (currentBlockIndex * PER_CUBE_VERTICES + k * 4),
-                                              world->shape.indices + (currentBlockIndex * PER_CUBE_INDICES + k * 6),
-                                              world->planesUncompressed[k], world->numPlanes + k);
+                                              &world->planesUncompressed[k], world->numPlanes + k);
                     }
                 }
                 currentBlockIndex++;
@@ -399,11 +409,14 @@ void geWorldGenerateCulledPlanes(geWorld* world) {
         }
     }
 
-//    for (k = 0; k < 6; k++) {
-//        if (realloc(planes[k], numPlanes[k] * sizeof(gePlane)) != NULL) {
-//            fprintf(stdout, "Reallocating space of plane %llu to %llu\n", k, numPlanes[k]);
-//        }
-//    }
+    for (k = 0; k < 6; k++) {
+        world->planesUncompressed[k] = realloc(world->planesUncompressed[k], world->numPlanes[k] * sizeof(gePlane));
+        if (world->planesUncompressed[k] == NULL) {
+            fprintf(stderr, "Failed to reallocate space of plane %llu to %llu\n", k, world->numPlanes[k]);
+        } else {
+            fprintf(stdout, "Reallocating space of plane %llu to %llu\n", k, world->numPlanes[k]);
+        }
+    }
     printf("---------------- CULLED MESH ----------------------\n");
     TIME_END("culling and sorting voxel world");
     size_t numVertices = 0, numPlanes = 0;
@@ -450,6 +463,18 @@ void geWorldShapeFromPlanes(geWorld* world) {
     TIME_START;
     size_t k, l, j, indexOffset = 0;
     GLuint indices[6];
+
+    world->shape.numVertices = 0;
+    for (k = 0; k < 6; k++) {
+        for (l = 0; l < world->numPlanes[k]; l++) {
+            world->shape.numVertices += world->planes[k][l].numVertices;
+        }
+    }
+    world->shape.numIndices = world->shape.numVertices * 3 / 2;
+
+    world->shape.vertices = realloc(world->shape.vertices, world->shape.numVertices * sizeof(geVertex));
+    world->shape.indices = realloc(world->shape.indices, world->shape.numIndices * sizeof(GLuint));
+
     for (k = 0; k < 6; k++) {
         indices[0] = 0;
         indices[1] = 1;
@@ -486,9 +511,6 @@ void geWorldShapeFromPlanes(geWorld* world) {
         }
     }
 
-    world->shape.numVertices = indexOffset * 4;
-    world->shape.numIndices = indexOffset * 6;
-
     indexOffset = 0;
     for (l = 0; l < world->shape.numIndices / 6; l++) {
         world->shape.indices[l * 6] += indexOffset;
@@ -500,8 +522,6 @@ void geWorldShapeFromPlanes(geWorld* world) {
         indexOffset += 4;
     }
 
-//    realloc(world->shape.vertices, world->shape.numVertices * sizeof(geVertex));
-//    realloc(world->shape.indices, world->shape.numIndices * sizeof(GLuint));
     TIME_END("converting to shape");
     printf("Total vertices and indices: %llu, %llu\n\n", world->shape.numVertices, world->shape.numIndices);
 }
@@ -697,7 +717,7 @@ void geWorldCopyPlanes(geWorld* world) {
             gePlane* planeUncompressed = &world->planesUncompressed[k][l];
 
             planeCompressed->numVertices = planeUncompressed->numVertices;
-            planeCompressed->vertices = calloc(8192 * 40, sizeof(geVertex));
+            planeCompressed->vertices = calloc(planeCompressed->numVertices, sizeof(geVertex));
             memcpy(planeCompressed->vertices, planeUncompressed->vertices, planeCompressed->numVertices * sizeof(geVertex));
         }
     }
@@ -759,13 +779,6 @@ void geWorldRemoveBlockFromUncompressedPlanes(geWorld* world, size_t x, size_t y
     gePlane* toUpdate[12] = { NULL };
     float toUpdatePlaneCoords[12];
 
-    current[0] = geWorldGetPlane(world, 0, z + 1);
-    current[1] = geWorldGetPlane(world, 1, z);
-    current[2] = geWorldGetPlane(world, 2, x);
-    current[3] = geWorldGetPlane(world, 3, x + 1);
-    current[4] = geWorldGetPlane(world, 4, y + 1);
-    current[5] = geWorldGetPlane(world, 5, y);
-
     float blockType[] = {
             z < world->sizeZ - 1 ? world->map[x][z + 1][y] : 0,
             z != 0 ? world->map[x][z - 1][y] : 0,
@@ -777,10 +790,90 @@ void geWorldRemoveBlockFromUncompressedPlanes(geWorld* world, size_t x, size_t y
             y != 0 ? world->map[x][z][y - 1] : 0,
     };
 
+    // ADD ALL FACES
+    // If adjacent on one side add the opposite side for the adjacent cube
+    if (blockType[0] != 0) {
+        float textureIndex = blockType[0] - 1;
+        geVertex toAddV[] = {
+                {{fx - size / 2, fy - size / 2, fz + size / 2}, {0.0f, 0.0f, -1.0f}, {1, 0, textureIndex}},
+                {{fx + size / 2, fy - size / 2, fz + size / 2}, {0.0f, 0.0f, -1.0f}, {0, 0, textureIndex}},
+                {{fx + size / 2, fy + size / 2, fz + size / 2}, {0.0f, 0.0f, -1.0f}, {0, 1, textureIndex}},
+                {{fx - size / 2, fy + size / 2, fz + size / 2}, {0.0f, 0.0f, -1.0f}, {1, 1, textureIndex}},
+        };
+        toUpdate[7] = addFaceInOrderedPlane(toAddV, &world->planesUncompressed[1], &world->numPlanes[1]);
+        toUpdatePlaneCoords[7] = planeCoordinate(toUpdate[7]->vertices);
+    }
+    if (blockType[1] != 0) {
+        float textureIndex = blockType[1] - 1;
+        geVertex toAddV[] = {
+                {{fx - size / 2, fy - size / 2, fz - size / 2}, {0.0f, 0.0f, 1.0f}, {0, 0, textureIndex}},
+                {{fx + size / 2, fy - size / 2, fz - size / 2}, {0.0f, 0.0f, 1.0f}, {1, 0, textureIndex}},
+                {{fx + size / 2, fy + size / 2, fz - size / 2}, {0.0f, 0.0f, 1.0f}, {1, 1, textureIndex}},
+                {{fx - size / 2, fy + size / 2, fz - size / 2}, {0.0f, 0.0f, 1.0f}, {0, 1, textureIndex}},
+        };
+        toUpdate[6] = addFaceInOrderedPlane(toAddV, &world->planesUncompressed[0], &world->numPlanes[0]);
+        toUpdatePlaneCoords[6] = planeCoordinate(toUpdate[6]->vertices);
+    }
+    if (blockType[2] != 0) {
+        float textureIndex = blockType[2] - 1;
+        geVertex toAddV[] = {
+                {{ fx - size / 2, fy - size / 2, fz - size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0, textureIndex}},
+                {{ fx - size / 2, fy - size / 2, fz + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0, textureIndex}},
+                {{ fx - size / 2, fy + size / 2, fz + size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1, textureIndex}},
+                {{ fx - size / 2, fy + size / 2, fz - size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1, textureIndex}},
+        };
+        toUpdate[9] = addFaceInOrderedPlane(toAddV, &world->planesUncompressed[3], &world->numPlanes[3]);
+        toUpdatePlaneCoords[9] = planeCoordinate(toUpdate[9]->vertices);
+    }
+    if (blockType[3] != 0) {
+        float textureIndex = blockType[3] - 1;
+        geVertex toAddV[] = {
+                {{ fx + size / 2, fy - size / 2, fz - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0, textureIndex}},
+                {{ fx + size / 2, fy - size / 2, fz + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0, textureIndex}},
+                {{ fx + size / 2, fy + size / 2, fz + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1, textureIndex}},
+                {{ fx + size / 2, fy + size / 2, fz - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1, textureIndex}},
+        };
+        toUpdate[8] = addFaceInOrderedPlane(toAddV, &world->planesUncompressed[2], &world->numPlanes[2]);
+        toUpdatePlaneCoords[8] = planeCoordinate(toUpdate[8]->vertices);
+    }
+    if(blockType[4] != 0) {
+        float textureIndex = blockType[4] - 1;
+        geVertex toAddV[] = {
+                {{ fx - size / 2, fy + size / 2, fz - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0, textureIndex}},
+                {{ fx + size / 2, fy + size / 2, fz - size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0, textureIndex}},
+                {{ fx + size / 2, fy + size / 2, fz + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1, textureIndex}},
+                {{ fx - size / 2, fy + size / 2, fz + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1, textureIndex}},
+        };
+        toUpdate[11] = addFaceInOrderedPlane(toAddV, &world->planesUncompressed[5], &world->numPlanes[5]);
+        toUpdatePlaneCoords[11] = planeCoordinate(toUpdate[11]->vertices);
+    }
+    if(blockType[5] != 0) {
+        float textureIndex = blockType[5] - 1;
+        geVertex toAddV[] = {
+                {{ fx - size / 2, fy - size / 2, fz - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0, textureIndex}},
+                {{ fx + size / 2, fy - size / 2, fz - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0, textureIndex}},
+                {{ fx + size / 2, fy - size / 2, fz + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1, textureIndex}},
+                {{ fx - size / 2, fy - size / 2, fz + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1, textureIndex}},
+        };
+        toUpdate[10] = addFaceInOrderedPlane(toAddV, &world->planesUncompressed[4], &world->numPlanes[4]);
+        toUpdatePlaneCoords[10] = planeCoordinate(toUpdate[10]->vertices);
+    }
+
+    current[0] = geWorldGetPlane(world, 0, z + 1);
+    current[1] = geWorldGetPlane(world, 1, z);
+    current[2] = geWorldGetPlane(world, 2, x);
+    current[3] = geWorldGetPlane(world, 3, x + 1);
+    current[4] = geWorldGetPlane(world, 4, y + 1);
+    current[5] = geWorldGetPlane(world, 5, y);
+
     // REMOVE ALL FACES
     // If not adjacent on a face's direction, remove current face
     for (side = 0; side < 6; side++) {
         if (blockType[side] != 0) {
+            continue;
+        }
+        if (current[side] == NULL) {
+            fprintf(stderr, "Failed to find plane on side %llu even though there should be one there\n", side);
             continue;
         }
         for (k = 0; k < current[side]->numVertices / 4; k++) {
@@ -796,144 +889,50 @@ void geWorldRemoveBlockFromUncompressedPlanes(geWorld* world, size_t x, size_t y
         }
     }
 
-    // ADD ALL FACES
-    // If adjacent on one side add the opposite side for the adjacent cube
-    if (blockType[0] != 0) {
-        float textureIndex = blockType[0] - 1;
-        geVertex toAddV[] = {
-                {{fx - size / 2, fy - size / 2, fz + size / 2}, {0.0f, 0.0f, -1.0f}, {1, 0, textureIndex}},
-                {{fx + size / 2, fy - size / 2, fz + size / 2}, {0.0f, 0.0f, -1.0f}, {0, 0, textureIndex}},
-                {{fx + size / 2, fy + size / 2, fz + size / 2}, {0.0f, 0.0f, -1.0f}, {0, 1, textureIndex}},
-                {{fx - size / 2, fy + size / 2, fz + size / 2}, {0.0f, 0.0f, -1.0f}, {1, 1, textureIndex}},
-        };
-        GLuint toAddI[] = {
-                0, 3, 2,
-                2, 1, 0
-        };
-        toUpdate[7] = addFaceInOrderedPlane(toAddV, toAddI, world->planesUncompressed[1], &world->numPlanes[1]);
-        toUpdatePlaneCoords[7] = planeCoordinate(toUpdate[7]->vertices);
-    }
-    if (blockType[1] != 0) {
-        float textureIndex = blockType[1] - 1;
-        geVertex toAddV[] = {
-                {{fx - size / 2, fy - size / 2, fz - size / 2}, {0.0f, 0.0f, 1.0f}, {1, 0, textureIndex}},
-                {{fx + size / 2, fy - size / 2, fz - size / 2}, {0.0f, 0.0f, 1.0f}, {0, 0, textureIndex}},
-                {{fx + size / 2, fy + size / 2, fz - size / 2}, {0.0f, 0.0f, 1.0f}, {0, 1, textureIndex}},
-                {{fx - size / 2, fy + size / 2, fz - size / 2}, {0.0f, 0.0f, 1.0f}, {1, 1, textureIndex}},
-        };
-        GLuint toAddI[] = {
-                0, 1, 2,
-                2, 3, 0
-        };
-        toUpdate[6] = addFaceInOrderedPlane(toAddV, toAddI, world->planesUncompressed[0], &world->numPlanes[0]);
-        toUpdatePlaneCoords[6] = planeCoordinate(toUpdate[6]->vertices);
-    }
-    if (blockType[2] != 0) {
-        float textureIndex = blockType[2] - 1;
-        geVertex toAddV[] = {
-                {{ fx - size / 2, fy - size / 2, fz - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 0, textureIndex}},
-                {{ fx - size / 2, fy - size / 2, fz + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 0, textureIndex}},
-                {{ fx - size / 2, fy + size / 2, fz + size / 2 }, { 1.0f, 0.0f, 0.0f }, {1, 1, textureIndex}},
-                {{ fx - size / 2, fy + size / 2, fz - size / 2 }, { 1.0f, 0.0f, 0.0f }, {0, 1, textureIndex}},
-        };
-        GLuint toAddI[] = {
-                0, 3, 2,
-                2, 1, 0
-        };
-        toUpdate[9] = addFaceInOrderedPlane(toAddV, toAddI, world->planesUncompressed[3], &world->numPlanes[3]);
-        toUpdatePlaneCoords[9] = planeCoordinate(toUpdate[9]->vertices);
-    }
-    if (blockType[3] != 0) {
-        float textureIndex = blockType[3] - 1;
-        geVertex toAddV[] = {
-                {{ fx + size / 2, fy - size / 2, fz - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 0, textureIndex}},
-                {{ fx + size / 2, fy - size / 2, fz + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 0, textureIndex}},
-                {{ fx + size / 2, fy + size / 2, fz + size / 2 }, { -1.0f, 0.0f, 0.0f }, {1, 1, textureIndex}},
-                {{ fx + size / 2, fy + size / 2, fz - size / 2 }, { -1.0f, 0.0f, 0.0f }, {0, 1, textureIndex}},
-        };
-        GLuint toAddI[] = {
-                0, 1, 2,
-                2, 3, 0
-        };
-        toUpdate[8] = addFaceInOrderedPlane(toAddV, toAddI, world->planesUncompressed[2], &world->numPlanes[2]);
-        toUpdatePlaneCoords[8] = planeCoordinate(toUpdate[8]->vertices);
-    }
-    if(blockType[4] != 0) {
-        float textureIndex = blockType[4] - 1;
-        geVertex toAddV[] = {
-                {{ fx - size / 2, fy + size / 2, fz - size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 0, textureIndex}},
-                {{ fx + size / 2, fy + size / 2, fz - size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 0, textureIndex}},
-                {{ fx + size / 2, fy + size / 2, fz + size / 2 }, { 0.0f, -1.0f, 0.0f }, {1, 1, textureIndex}},
-                {{ fx - size / 2, fy + size / 2, fz + size / 2 }, { 0.0f, -1.0f, 0.0f }, {0, 1, textureIndex}},
-        };
-        GLuint toAddI[] = {
-                0, 1, 2,
-                2, 3, 0
-        };
-        toUpdate[11] = addFaceInOrderedPlane(toAddV, toAddI, world->planesUncompressed[5], &world->numPlanes[5]);
-        toUpdatePlaneCoords[11] = planeCoordinate(toUpdate[11]->vertices);
-    }
-    if(blockType[5] != 0) {
-        float textureIndex = blockType[5] - 1;
-        geVertex toAddV[] = {
-                {{ fx - size / 2, fy - size / 2, fz - size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 0, textureIndex}},
-                {{ fx + size / 2, fy - size / 2, fz - size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 0, textureIndex}},
-                {{ fx + size / 2, fy - size / 2, fz + size / 2 }, { 0.0f, 1.0f, 0.0f }, {1, 1, textureIndex}},
-                {{ fx - size / 2, fy - size / 2, fz + size / 2 }, { 0.0f, 1.0f, 0.0f }, {0, 1, textureIndex}},
-        };
-        GLuint toAddI[] = {
-                0, 3, 2,
-                2, 1, 0
-        };
-        toUpdate[10] = addFaceInOrderedPlane(toAddV, toAddI, world->planesUncompressed[4], &world->numPlanes[4]);
-        toUpdatePlaneCoords[10] = planeCoordinate(toUpdate[10]->vertices);
-    }
-
     // UPDATE PLANES
-//    for (k = 0; k < 12; k++) {
-//        if (toUpdate[k] == NULL) {
-//            continue;
-//        }
-//        gePlane* p = NULL;
-//        for (l = 0; l < world->numPlanes[k % 6]; l++) {
-//            p = &world->planes[k % 6][l];
-//            if (p->numVertices != 0 && planeCoordinate(p->vertices) == toUpdatePlaneCoords[k]) {
-//                break;
-//            }
-//        }
-//        if (toUpdate[k]->numVertices == 0) {
-//            // k is less than 6
-//            if (l < world->numPlanes[k]) {
-//                memcpy(&world->planesUncompressed[k][l], &world->planesUncompressed[k][l] + 1, (world->numPlanes[k] - l - 1) * sizeof(gePlane));
-//                memcpy(p, p + 1, (world->numPlanes[k] - l - 1) * sizeof(gePlane));
-//                world->numPlanes[k]--;
-//
-//                // Fix plane pointers
-//                if (toUpdate[k + 6] >= &world->planesUncompressed[k % 6][l]) {
-//                    toUpdate[k + 6]--;
-//                }
-//            }
-//        } else {
-//            // If the plane is new, create it, otherwise free the memory
-//            if (l < world->numPlanes[k % 6]) {
-//                free(p->vertices);
-//                free(p->indices);
-//            } else {
-//                // numPlanes already incremented
-//                p = &world->planes[k % 6][world->numPlanes[k % 6] - 1];
-////                world->numPlanes[k % 6]++;
-//            }
-//
-//            p->vertices = calloc(toUpdate[k]->numVertices, sizeof(geVertex));
-//            p->indices = calloc(toUpdate[k]->numIndices, sizeof(GLuint));
-//            p->numVertices = toUpdate[k]->numVertices;
-//            p->numIndices = toUpdate[k]->numIndices;
-//            memcpy(p->vertices, toUpdate[k]->vertices, sizeof(geVertex) * toUpdate[k]->numVertices);
-//            memcpy(p->indices, toUpdate[k]->indices, sizeof(GLuint) * toUpdate[k]->numIndices);
-//
-//            gePlaneCompressWithGreedy(p);
-//        }
-//    }
+    for (k = 0; k < 12; k++) {
+        if (toUpdate[k] == NULL) {
+            continue;
+        }
+        gePlane* p = NULL;
+        if (k >= 6 && toUpdate[k]->numVertices / 4 == 1) {
+            // New plane created therefore make enough memory for compressed planes as well
+            world->planes[k % 6] = realloc(world->planes[k % 6], world->numPlanes[k % 6] * sizeof(gePlane));
+            l = world->numPlanes[k % 6] - 1;
+            p = &world->planes[k % 6][l];
+            p->vertices = NULL;
+        } else {
+            for (l = 0; l < world->numPlanes[k % 6]; l++) {
+                p = &world->planes[k % 6][l];
+                if (p->numVertices != 0 && planeCoordinate(p->vertices) == toUpdatePlaneCoords[k]) {
+                    break;
+                }
+            }
+        }
+        if (toUpdate[k]->numVertices == 0) {
+            // k here is less than 6
+            fprintf(stdout, "Got side %llu with no vertices, deleting plane\n", k);
+            memcpy(&world->planesUncompressed[k][l], &world->planesUncompressed[k][l] + 1, (world->numPlanes[k] - l - 1) * sizeof(gePlane));
+            memcpy(p, p + 1, (world->numPlanes[k] - l - 1) * sizeof(gePlane));
+            world->numPlanes[k]--;
+
+            // Fix plane pointers
+            if (toUpdate[k + 6] >= &world->planesUncompressed[k % 6][l]) {
+                toUpdate[k + 6]--;
+            }
+        } else {
+            // If plane is found deallocate otherwise, consider it newly created
+            free(p->vertices);
+
+            p->vertices = calloc(toUpdate[k]->numVertices, sizeof(geVertex));
+            p->numVertices = toUpdate[k]->numVertices;
+            memcpy(p->vertices, toUpdate[k]->vertices, sizeof(geVertex) * toUpdate[k]->numVertices);
+
+            if (world->algorithm == GE_ALGORITHM_GREEDY) {
+                gePlaneCompressWithGreedy(p);
+            }
+        }
+    }
 }
 
 void geWorldRemoveBlock(geWorld* world, kmVec3* v) {
@@ -946,23 +945,15 @@ void geWorldRemoveBlock(geWorld* world, kmVec3* v) {
 
     world->numBlocks--;
 
-    if (world->algorithm == GE_ALGORITHM_GREEDY) {
-        geWorldRemoveBlockFromUncompressedPlanes(world, x, y, z);
-        geWorldCopyPlanes(world);
-        geWorldCompressCulledPlanesWithGreedy(world);
-        geWorldShapeFromPlanes(world);
-        return;
-    }
-
-
-    if (world->algorithm == GE_ALGORITHM_CULLED) {
-        geWorldRemoveBlockFromUncompressedPlanes(world, x, y, z);
-        geWorldCopyPlanes(world);
-        geWorldShapeFromPlanes(world);
-    } else if (world->algorithm == GE_ALGORITHM_BASIC) {
+    if (world->algorithm == GE_ALGORITHM_BASIC) {
         geWorldGenerateShape(world, true);
-//        geWorldGenerateCulledPlanes(world);
-//        geWorldCompressCulledPlanesWithGreedy(world);
-//        geWorldShapeFromPlanes(world);
+    } else if (world->algorithm == GE_ALGORITHM_CULLED) {
+        geWorldRemoveBlockFromUncompressedPlanes(world, x, y, z);
+        geWorldCopyPlanes(world);
+        geWorldShapeFromPlanes(world);
+    } else if (world->algorithm == GE_ALGORITHM_GREEDY) {
+        geWorldRemoveBlockFromUncompressedPlanes(world, x, y, z);
+        geWorldShapeFromPlanes(world);
     }
+
 }

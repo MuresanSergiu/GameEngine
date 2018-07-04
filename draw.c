@@ -14,7 +14,6 @@
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_image.h>
 
-kmVec3 lightPoint = {0, 200, 0};
 geObject* sun;
 geObject* sky;
 geObject* shadowMap;
@@ -50,7 +49,7 @@ void initObjects() {
     sun->shape = shapes + GE_CUBE;
     sun->texture = tex[GE_TEXTURE_YELLOW];
     sun->size.x = sun->size.y = sun->size.z = 30;
-    sun->pos = lightPoint;
+    sun->pos.y = 200;
     sun->exemptFromViewTranslation = true;
     sun->extraBrightness = 1;
 //    objects[712].shape = shapes + GE_CUBE;
@@ -132,7 +131,7 @@ void initObjects() {
     worldsSecondary[1].object->glTextureId = GL_TEXTURE2;
     worldsSecondary[1].object->pos.z = 60;
 
-    worldMain = geWorldInit(GE_ALGORITHM_BASIC, 10, 32, 10);
+    worldMain = geWorldInit(GE_ALGORITHM_GREEDY, 10, 32, 10);
     geShapeBuffer(&worldMain.shape);
     worldMain.object = geObjectInit();
     worldMain.object->shape = &worldMain.shape;
@@ -231,8 +230,8 @@ void geShapeBuffer(geShape* shape) {
     shape->offsetBytesVertex = currentOffsetVertex;
     shape->offsetBytesIndex = currentOffsetIndex;
 
-    currentOffsetVertex += shape->numVertices * sizeof(geVertex);
-    currentOffsetIndex += shape->numIndices * sizeof(GLuint);
+    currentOffsetVertex += (shape->numVertices + 290000) * sizeof(geVertex);
+    currentOffsetIndex += (shape->numIndices + 290000) * sizeof(GLuint);
 
     // Buffer shape
     glBindVertexArray(shape->vao);
@@ -389,6 +388,17 @@ void initScene() {
 
     initObjects();
 
+    kmMat4 rot;
+    kmMat4RotationZ(&rot, 15 * PI / 180.0f);
+    kmVec3MultiplyMat4(&sun->pos, &sun->pos, &rot);
+    sun->rotation.z += 15;
+    glUniform3fv(_U(pl[0]), 1, (const GLfloat *) &sun->pos);
+
+    kmVec3 lightDirection = {0, -1, 0};
+    kmVec3Subtract(&lightDirection, &lightDirection, &sun->pos);
+    kmVec3Normalize(&lightDirection, &lightDirection);
+    glUniform3fv(_U(dl), 1, (const GLfloat *) &lightDirection);
+
 //    glGenRenderbuffers(1, rbos);
 //    glBindRenderbuffer(GL_RENDERBUFFER, rbos[0]);
 //    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, 1, 1);
@@ -423,22 +433,21 @@ void update() {
 
     // Update lights
     kmMat4 rot;
-    kmMat4RotationZ(&rot, 0.004f * PI / 180.0f);
-    kmVec3MultiplyMat4(&lightPoint, &lightPoint, &rot);
-    sun->pos = lightPoint;
-    sun->rotation.z += 0.004f;
-    glUniform3fv(_U(pl[0]), 1, (const GLfloat *) &lightPoint);
-
-    float skyDim = cosf(sun->rotation.z * PI / 180.0f);
-    if (skyDim <= 0.1f) {
-        skyDim = 0.1f;
-    }
-    glUniform1f(_U(skyDim), skyDim);
-
-    kmVec3 lightDirection = {0, 0, 0};
-    kmVec3Subtract(&lightDirection, &lightDirection, &lightPoint);
-    kmVec3Normalize(&lightDirection, &lightDirection);
-    glUniform3fv(_U(dl), 1, (const GLfloat *) &lightDirection);
+//    kmMat4RotationZ(&rot, 0.004f * PI / 180.0f);
+//    kmVec3MultiplyMat4(&sun->pos, &sun->pos, &rot);
+//    sun->rotation.z += 0.004f;
+//    glUniform3fv(_U(pl[0]), 1, (const GLfloat *) &sun->pos);
+//
+//    float skyDim = cosf(sun->rotation.z * PI / 180.0f);
+//    if (skyDim <= 0.1f) {
+//        skyDim = 0.1f;
+//    }
+    glUniform1f(_U(skyDim), 1);
+//
+    kmVec3 lightDirection = {0, -1, 0};
+//    kmVec3Subtract(&lightDirection, &lightDirection, &sun->pos);
+//    kmVec3Normalize(&lightDirection, &lightDirection);
+//    glUniform3fv(_U(dl), 1, (const GLfloat *) &lightDirection);
 
     kmMat4Identity(&rot);
     glUniformMatrix4fv(_U(scaleBias), 1, GL_FALSE, rot.mat);
@@ -521,12 +530,7 @@ void geObjectDraw(geObject* obj) {
         glDrawArrays(primitive, (GLint) obj->shape->offsetBytesVertex / sizeof(geVertex), (GLsizei) (obj->shape->numVertices));
     } else {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
-
-//        if (obj->shape == shapes + GE_VERTEX_WORLD_LESS_DUMB) {
-//            glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
-//        } else {
-            glDrawElements(primitive, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
-//        }
+        glDrawElements(primitive, (GLsizei) obj->shape->numIndices, GL_UNSIGNED_INT, (const void*) obj->shape->offsetBytesIndex);
     }
     glBindVertexArray(0);
 }

@@ -82,6 +82,7 @@ bool mousemap[255];
 
 float debugSpecularPower = 20;
 bool showNormals = false;
+bool instaBreak = false;
 
 void updateKeyHandles() {
     float dist = 0.5f;
@@ -126,6 +127,8 @@ void updateKeyHandles() {
         printf("showNormals: %u %u\n", _U(showNormals), showNormals);
         glUniform1i(_U(showNormals), showNormals);
         glUseProgram((GLuint) programID);
+    } else if (keymap[SDL_SCANCODE_F11]) {
+        instaBreak = !instaBreak;
     }
 }
 
@@ -136,18 +139,18 @@ void updateMouseHandles(int x, int y) {
             glUniform3f(_U(_mouseOutColor), 0, 0, 0);
         } else {
             kmVec3 raycast = geCameraRaycast(&cameraMain, &worldMain);
-            if (raycast.x != -1 && raycast.y != -1 && raycast.z != -1) {
+            if (raycast.x != -1 || raycast.y != -1 || raycast.z != -1) {
                 geWorldRemoveBlock(&worldMain, &raycast);
                 geShapeBuffer(&worldMain.shape);
             } else {
                 raycast = geCameraRaycast(&cameraMain, &worldsSecondary[0]);
-                if (raycast.x != -1 && raycast.y != -1 && raycast.z != -1) {
+                if (raycast.x != -1 || raycast.y != -1 || raycast.z != -1) {
                     kmVec3Subtract(&raycast, &raycast, &worldsSecondary[0].object->pos);
                     geWorldRemoveBlock(&worldsSecondary[0], &raycast);
                     geShapeBuffer(&worldsSecondary[0].shape);
                 } else {
                     raycast = geCameraRaycast(&cameraMain, &worldsSecondary[1]);
-                    if (raycast.x != -1 && raycast.y != -1 && raycast.z != -1) {
+                    if (raycast.x != -1 || raycast.y != -1 || raycast.z != -1) {
                         kmVec3Subtract(&raycast, &raycast, &worldsSecondary[1].object->pos);
                         geWorldRemoveBlock(&worldsSecondary[1], &raycast);
                         geShapeBuffer(&worldsSecondary[1].shape);
@@ -157,8 +160,10 @@ void updateMouseHandles(int x, int y) {
         }
     }
     if (mousemap[SDL_BUTTON_RIGHT]) {
-        memcpy(&linePointer->rotation, &cameraMain.rotation, sizeof(kmVec3));
-        memcpy(&linePointer->pos, &cameraMain.pos, sizeof(kmVec3));
+        if (linePointer != NULL) {
+            memcpy(&linePointer->rotation, &cameraMain.rotation, sizeof(kmVec3));
+            memcpy(&linePointer->pos, &cameraMain.pos, sizeof(kmVec3));
+        }
     }
 }
 
@@ -183,7 +188,9 @@ int main(int argc, char** argv) {
     while(loop) {
         struct timeval stop, start;
         gettimeofday(&start, NULL);
-
+        if (instaBreak) {
+            updateMouseHandles(e.button.x, e.button.y);
+        }
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
                 loop = false;
