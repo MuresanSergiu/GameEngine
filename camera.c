@@ -7,7 +7,7 @@
 #include "shader.h"
 #include "world.h"
 #include <kazmath/vec4.h>
-#include <mem.h>
+#include <string.h>
 
 /* EXTERNAL FUNCTIONS */
 

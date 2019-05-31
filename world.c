@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <mem.h>
+#include <string.h>
 #include <sys/time.h>
 #include "world.h"
 #include "utils.h"

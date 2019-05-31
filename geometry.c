@@ -3,7 +3,7 @@
 //
 
 #include <stdlib.h>
-#include <mem.h>
+#include <string.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include "geometry.h"

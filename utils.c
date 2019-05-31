@@ -7,8 +7,8 @@
 #include <GL/glew.h>
 #include <stdbool.h>
 #include <math.h>
-#include <_timeval.h>
-#include <mem.h>
+#include <time.h>
+#include <string.h>
 #include "simplex_noise.h"
 #include "utils.h"
 
@@ -17,29 +17,22 @@
 
 /* EXTERNAL FUNCTIONS */
 
-char** readFile(char* path) {
+void readFile(char* path, char* dest) {
     FILE* fp = fopen(path, "r");
-    size_t charsRead, i = 0, j;
-    char* resultTemp[GE_MAX_LINES];
-    char** result;
-
     if (fp == NULL) {
         fprintf(stdout, "Failed to read file %s\n", path);
+        perror("At reading file");
         exit(EXIT_FAILURE);
+        return;
     }
-    do {
-        char* buffer = calloc(GE_BUF_SIZE, sizeof(char));
-        charsRead = fread(buffer, sizeof(char), GE_BUF_SIZE, fp);
-        buffer[charsRead] = 0;
-        resultTemp[i++] = buffer;
-    } while (charsRead > 0);
-    result = calloc(i, sizeof(char*));
 
-    for (j = 0; j < i; j++) {
-        result[j] = resultTemp[j];
-    }
+    size_t charsRead, buffers = 0;
+    do {
+        charsRead = fread(dest + buffers * GE_BUF_SIZE, sizeof(char), GE_BUF_SIZE, fp);
+        dest[buffers * GE_BUF_SIZE + charsRead] = 0;
+        buffers++;
+    } while(charsRead > 0);
     fclose(fp);
-    return result;
 }
 
 void printFace(geVertex* v) {
@@ -87,10 +80,10 @@ static int hash[256] = {
         114, 20, 218, 113, 154, 27, 127, 246, 250, 1, 8, 198, 250, 209, 92, 222, 173, 21, 88, 102, 219
 };
 
-int random(float x, float y) {
-    int tmp = hash[((int)y % 256)];
-    return hash[(int)(tmp + x) % 256];
-}
+// int random(float x, float y) {
+//     int tmp = hash[((int)y % 256)];
+//     return hash[(int)(tmp + x) % 256];
+// }
 
 float sample(float x, float y, float amp) {
     // x and y between 0 and 15

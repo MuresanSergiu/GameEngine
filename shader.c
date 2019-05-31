@@ -20,13 +20,17 @@ void initShader(SHADER shaderID, const char* file) {
     char pathFragment[512];
     char pathGeometry[512];
 
-    char** sourceVertex;
-    char** sourceFragment;
-    char** sourceGeometry;
+    char sourceVertex[32000];
+    char sourceFragment[32000];
+    char sourceGeometry[32000];
 
-    GLint* lengthVertex;
-    GLint* lengthFragment;
-    GLint* lengthGeometry;
+    char* sourceVertexPointer = sourceVertex;
+    char* sourceFragmentPointer = sourceFragment;
+    char* sourceGeometryPointer = sourceGeometry;
+
+    GLint lengthVertex;
+    GLint lengthFragment;
+    GLint lengthGeometry;
 
     sprintf(pathVertex, "../shader/%s.vert", file);
     sprintf(pathFragment, "../shader/%s.frag", file);
@@ -35,32 +39,29 @@ void initShader(SHADER shaderID, const char* file) {
     }
 
     // Read the source file
-    sourceVertex = readFile(pathVertex);
-    lengthVertex = calloc(1, sizeof(size_t));
-    *lengthVertex = (GLint) strlen(sourceVertex[0]) + 1;
+    readFile(pathVertex, sourceVertex);
+    lengthVertex = strlen(sourceVertex);
 
-    sourceFragment = readFile(pathFragment);
-    lengthFragment = calloc(1, sizeof(size_t));
-    *lengthFragment = (GLint) strlen(sourceFragment[0]) + 1;
+    readFile(pathFragment, sourceFragment);
+    lengthFragment = strlen(sourceFragment);
 
     if (shaderID == GE_PROGRAM_WIREFRAME) {
-        sourceGeometry = readFile(pathGeometry);
-        lengthGeometry = calloc(1, sizeof(size_t));
-        *lengthGeometry = (GLint) strlen(sourceGeometry[0]) + 1;
+        readFile(pathGeometry, sourceGeometry);
+        lengthGeometry = strlen(sourceGeometry);
     }
 
     // Initialize shaders
     vertexShaders[shaderID] = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShaders[shaderID], 1, (const GLchar *const *) sourceVertex, lengthVertex);
+    glShaderSource(vertexShaders[shaderID], 1, (const GLchar *const *) &sourceVertexPointer, &lengthVertex);
     glCompileShader(vertexShaders[shaderID]);
 
     fragmentShaders[shaderID] = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShaders[shaderID], 1, (const GLchar *const *) sourceFragment, lengthFragment);
+    glShaderSource(fragmentShaders[shaderID], 1, (const GLchar *const *) &sourceFragmentPointer, &lengthFragment);
     glCompileShader(fragmentShaders[shaderID]);
 
     if (shaderID == GE_PROGRAM_WIREFRAME) {
         geometryShaders[shaderID] = glCreateShader(GL_GEOMETRY_SHADER);
-        glShaderSource(geometryShaders[shaderID], 1, (const GLchar* const*) sourceGeometry, lengthGeometry);
+        glShaderSource(geometryShaders[shaderID], 1, (const GLchar* const*) &sourceGeometryPointer, &lengthGeometry);
         glCompileShader(geometryShaders[shaderID]);
     }
 

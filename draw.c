@@ -10,7 +10,7 @@
 #include "camera.h"
 #include "world.h"
 #include <math.h>
-#include <mem.h>
+#include <string.h>
 #include <SDL2/SDL_video.h>
 #include <SDL2/SDL_image.h>
 

@@ -6,7 +6,7 @@
 #define GAMEENGINE_UTILS_H
 
 #include <stdbool.h>
-#include <sys/time.h>
+#include <time.h>
 #include "types.h"
 
 #define PI 3.14159265f
@@ -26,7 +26,7 @@
     printf("(~%llums)\n", (((size_t) difftime(tEnd.tv_sec, tStart.tv_sec)) * 1000000000 + tEnd.tv_nsec - tStart.tv_nsec) / 1000000);
 
 
-char** readFile(char* path);
+void readFile(char* path, char* dest);
 void printFace(geVertex* v);
 void printVec3(kmVec3* v);
 double timeDiff(struct timeval t1, struct timeval t2);

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.5)
 project(GameEngine)
 
 set(CMAKE_C_STANDARD 11)
@@ -13,9 +13,10 @@ find_package(KAZMATH)
 pkg_search_module(SDL2IMAGE REQUIRED SDL2_image>=2.0.0)
 
 string(REPLACE "  -mwindows" "" SDL2_LIBRARIES ${SDL2_LIBRARIES})
+string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
-target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${SDL2_LIBRARIES} ${GLEW_LIBRARIES} ${KAZMATH_LIBRARIES} ${SDL2IMAGE_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES} ${SDL2_LIBRARIES} ${GLEW_LIBRARIES} ${KAZMATH_LIBRARIES} ${SDL2IMAGE_LIBRARIES} -lm)
 
 get_cmake_property(_variableNames VARIABLES)
 foreach (_variableName ${_variableNames})
